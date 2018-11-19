@@ -1,0 +1,46 @@
+apply plugin: 'com.android.application'
+
+dependencies {
+    api project(':libs:SmartSync')
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+
+    //recyclerview
+    implementation 'com.android.support:recyclerview-v7:27.1.1'
+}
+
+android {
+    compileSdkVersion 27
+    buildToolsVersion '27.0.3'
+
+    sourceSets {
+
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            resources.srcDirs = ['src']
+            aidl.srcDirs = ['src']
+            renderscript.srcDirs = ['src']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']
+        }
+
+    }
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/NOTICE'
+    }
+
+    lintOptions {
+        xmlReport true
+        abortOnError false
+    }
+}
+
+afterEvaluate {
+    // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
+    // from timing out since executing tests are printed to the console.
+    tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
+}

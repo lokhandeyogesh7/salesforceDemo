@@ -1,17 +1,28 @@
 package com.salesforce.samples.smartsyncexplorer;
 
+import android.Manifest;
 import android.accounts.Account;
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.LoaderManager;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -35,6 +46,13 @@ import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 import com.salesforce.samples.smartsyncexplorer.sync.ContactSyncAdapter;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.StatusLine;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -46,6 +64,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -69,6 +88,8 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
     ProductListAdapter mAdapter;
     private SearchView searchView;
     List<ProductObject> productObjects = new ArrayList<>();
+    public static final int MY_PERMISSIONS_REQUEST_WRITE_CALENDAR = 123;
+    ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,20 +105,28 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         isRegistered = new AtomicBoolean(false);
         sdkManager = SmartSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore(sdkManager.getUserAccountManager().getCurrentUser());
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(false);
 
     }
 
     @Override
     public void onResume(final RestClient client) {
-        productObjects = new ArrayList<>();
-        getLoaderManager().initLoader(PRODUCT_LOADER_ID, null, this);
-        if (!isRegistered.get()) {
-            registerReceiver(loadCompleteReceiver,
-                    new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
+        boolean result = checkPermission();
+        if (result) {
+            productObjects = new ArrayList<>();
+            getLoaderManager().initLoader(PRODUCT_LOADER_ID, null, this);
+            if (!isRegistered.get()) {
+                registerReceiver(loadCompleteReceiver,
+                        new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
+            }
+            isRegistered.set(true);
+            callProductApi(client);
         }
-        isRegistered.set(true);
+    }
 
-
+    private void callProductApi(final RestClient client) {
+        progressDialog.show();
         RestRequest restRequest =
                 null;
         try {
@@ -105,7 +134,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                     getString(R.string.api_version), "SELECT name,id,ProductCode FROM product2");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
-            System.out.println("exception is "+e.getMessage());
+            System.out.println("exception is " + e.getMessage());
         }
 
         client.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
@@ -113,6 +142,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
             public void onSuccess(RestRequest request, RestResponse response) {
                 System.out.println("success product Activity product2" + request);
                 System.out.println("success product Activity product2" + response);
+                progressDialog.dismiss();
                 try {
                     System.out.println("success product Activity sdsdsdsdsd" + response.asJSONObject().getJSONArray("records"));
                 } catch (JSONException | IOException e) {
@@ -135,24 +165,21 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                         rvProducts.setLayoutManager(mLayoutManager);
                         rvProducts.setAdapter(mAdapter);
 
-                        for (int i = 0; i < productObjects.size(); i++) {
+                       /* for (int i = 0; i < productObjects.size(); i++) {
                             setUpPricebookSoup(client, productObjects.get(i).getProductCode());
-                        }
-
-                        for (int j = 0; j < productObjects.size(); j++) {
-                            setAttachmentSoup(client, productObjects.get(j).getProductId(),productObjects.get(j).getProductName());
-                        }
-                       /* for (int j = 0; j < productObjects.size(); j++) {
-                            setNotesSoup(client, productObjects.get(j).getProductId(),productObjects.get(j).getProductName());
                         }*/
+                        smartStore.clearSoup("attachments");
+                        for (int j = 0; j < productObjects.size(); j++) {
+                            setAttachmentSoup(client, productObjects.get(j).getProductId());
+                        }
 
                         mAdapter.setOnItemClickListener(new ProductListAdapter.ClickListener() {
                             @Override
                             public void onItemClick(int position, View v) {
                                 ProductObject sObject = productObjects.get(position);
-                                System.out.println("cliked object id is " + sObject.getProductCode());
+                                System.out.println("cliked object id is " + sObject.getProductId());
                                 Intent intent = new Intent(ProductsActivity.this, ProductDetailsActivity.class);
-                                intent.putExtra("product_code", sObject.getProductCode());
+                                intent.putExtra("product_code", sObject.getProductId());
                                 System.out.println("product code " + sObject.getProductCode());
                                 startActivity(intent);
                             }
@@ -169,6 +196,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
             @Override
             public void onError(Exception exception) {
                 exception.printStackTrace();
+                progressDialog.dismiss();
                 System.out.println("failed " + exception.getMessage());
                 runOnUiThread(new Runnable() {
                     @Override
@@ -215,7 +243,8 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                     getString(R.string.api_version), "SELECT Title FROM Files WHERE ParentId='" + productCode + "'");
             /*restRequest = RestRequest.getRequestForQuery(
                     getString(R.string.api_version), "SELECT Body,CreatedById,CreatedDate,Id,IsDeleted,IsPrivate,LastModifiedById,LastModifiedDate,OwnerId,ParentId,SystemModstamp,Title FROM Note WHERE ParentId='" + productCode + "'");
-    */    } catch (UnsupportedEncodingException e) {
+    */
+        } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
 
@@ -246,8 +275,8 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         });
     }
 
-    private void setAttachmentSoup(RestClient client, String productCode, final String productName) {
-
+    private void setAttachmentSoup(final RestClient client, final String productCode) {
+        progressDialog.show();
         RestRequest restRequest =
                 null;
         try {
@@ -259,46 +288,84 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
             e.printStackTrace();
         }
 
-        System.out.println("getString(R.string.api_version) "+getString(R.string.api_version));
+        System.out.println("getString(R.string.api_version) " + getString(R.string.api_version));
 
         client.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
             @Override
-            public void onSuccess(RestRequest request, RestResponse response) {
+            public void onSuccess(RestRequest request, final RestResponse response) {
                 System.out.println("success product Activity" + request);
-                System.out.println("success product Activity" + response);
-                System.out.println("success product Activity Attachment" + response);
-                System.out.println("success product Activity Attachment product name is " + productName);
-
+                progressDialog.dismiss();
                 try {
-                    if (response.asJSONObject().getJSONArray("records").length()!=0){
-                        for (int i = 0; i <response.asJSONObject().getJSONArray("records").length() ; i++) {
-                            //DownloadTask downloadTask = new DownloadTask(this,response.asJSONObject().getJSONArray("records").getJSONObject());
-                        }
-
-
-                    }
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
+                    System.out.println("success product Activity size of records" + response.asJSONObject().getJSONArray("records").length());
+                } catch (JSONException | IOException e) {
                     e.printStackTrace();
                 }
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
+
+                System.out.println("success product Activity Attachment" + response);
+                System.out.println("success product Activity Attachment product name is " + productCode);
+                try {
+                    if (response.asJSONObject().getJSONArray("records").length() != 0) {
+                        //for (int i = 0; i < response.asJSONObject().getJSONArray("records").length(); i++) {
+                            /*runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {*/
+                        inserAttachments(response.asJSONObject().getJSONArray("records"));
+                        downloadFile(client, response, productCode);
+                               /* }
+                            });*/
+                        //}
                     }
-                });
+
+                } catch (JSONException | IOException e) {
+                    e.printStackTrace();
+                }
+
+
             }
 
             @Override
             public void onError(Exception exception) {
                 exception.printStackTrace();
+                progressDialog.dismiss();
                 System.out.println("failed " + exception.getMessage());
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                     }
                 });
+            }
+        });
+    }
+
+    private void inserAttachments(final JSONArray records) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                progressDialog.show();
+                try {
+                    if (records != null) {
+                        for (int i = 0; i < records.length(); i++) {
+                            if (records.get(i) != null) {
+                                try {
+                                    System.out.println("attachments id " + records.getJSONObject(i));
+                                    smartStore.upsert("attachments", records.getJSONObject(i));
+
+                                } catch (JSONException exc) {
+                                    Log.e(TAG, "Error occurred while attempting to insert account. "
+                                            + "Please verify validity of JSON data set.");
+                                    progressDialog.dismiss();
+                                }
+                            }
+                        }
+                        progressDialog.dismiss();
+                    }
+                } catch (JSONException e) {
+                    progressDialog.dismiss();
+                    Log.e(TAG, "Error occurred while attempting to insert accounts. "
+                            + "Please verify validity of JSON data set.");
+                }
+
             }
         });
     }
@@ -521,74 +588,133 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
     }
 
 
+    private void downloadFile(final RestClient client, final RestResponse result, final String productName) {
+        //Get the external storage directory and make a new directory for our attachments
+        new Thread(new Runnable() {
+            public void run() {
 
-    public class DownloadTask extends AsyncTask<Integer, Integer, Void> {
-
-        private static final String PEFERENCE_FILE = "preference";
-        private static final String ISDOWNLOADED = "isdownloaded";
-        SharedPreferences settings;
-        SharedPreferences.Editor editor;
-        Context context;
-        public DownloadTask(Context context){
-            this.context = context;
-        }
-
-        protected void onPreExecute(){
-            //Create the notification in the statusbar
-        }
-
-        @Override
-        protected Void doInBackground(Integer... integers) {
-            //This is where we would do the actual download stuff
-            //for now I'm just going to loop for 10 seconds
-            // publishing progress every second
-
-            int count;
-
-            try {
-
-
-                URL url = new URL("filename url");
-                URLConnection connexion = url.openConnection();
-                connexion.connect();
-
-                int lenghtOfFile = connexion.getContentLength();
-                Log.d("ANDRO_ASYNC", "Lenght of file: " + lenghtOfFile);
-
-                InputStream input = new BufferedInputStream(url.openStream());
-                //OutputStream output = new FileOutputStream("/sdcard/foldername/temp.zip");
-                OutputStream output = new FileOutputStream("/sdcard/foldername/himages.zip");
-                byte data[] = new byte[1024];
-
-                long total = 0;
-
-                while ((count = input.read(data)) != -1) {
-                    total += count;
-                    //publishProgress(""+(int)((total*100)/lenghtOfFile));
-                    Log.d("%Percentage%",""+(int)((total*100)/lenghtOfFile));
-                    onProgressUpdate((int)((total*100)/lenghtOfFile));
-                    output.write(data, 0, count);
+                String path = Environment.getExternalStorageDirectory() + "/" + "SalesForce/";
+                File dir = new File(path);
+                if (!dir.exists()) {
+                    dir.mkdirs();
                 }
 
-                output.flush();
-                output.close();
-                input.close();
-                File file = new File(Environment.getExternalStorageDirectory()
-                        + "/foldername/"+"_images.zip");
-                File path = new File(Environment.getExternalStorageDirectory()
-                        + "/foldername");
+                try {
+                    //This is the array from our query response for attachments
+                    JSONArray records = result.asJSONObject().getJSONArray("records");
 
-            } catch (Exception e) {}
+                    System.out.println("records inside download loop " + records);
+                    System.out.println("records inside download loop " + records.length());
 
+                    //Loop through our attachment records
+                    for (int i = 0; i < records.length(); i++) {
+                        progressDialog.dismiss();
+                        JSONObject jsonObject = records.getJSONObject(i).getJSONObject("ContentDocument");
+                        String strTitle = jsonObject.getString("Title");
+                        String fileType = jsonObject.getString("FileType");
+                        String linkedEntityId = records.getJSONObject(i).getString("ContentDocumentId");
 
-            return null;
+                        System.out.println("inside download loop title is " + strTitle + "   filetype is " + fileType + "   liked entity id is " + linkedEntityId);
+
+                        //String attUrl = client.getClientInfo().resolveUrl(records.getJSONObject(i).getString("Body")).toString();
+                        String attUrl = client.getClientInfo().resolveUrl("/servlet/servlet.FileDownload?file=" + linkedEntityId).toString();
+
+                        //Create a new HttpClient
+                        HttpClient tempClient = new DefaultHttpClient();
+
+                        System.out.println("Attachment url is " + attUrl);
+
+                        //parse our URL into a new URI
+                        URI theUrl = new URI(attUrl);
+
+                        //Create a new get request
+                        HttpGet getRequest = new HttpGet();
+
+                        //set the URI
+                        getRequest.setURI(theUrl);
+
+                        //set the header with the auth token we got from our instance of RestClient
+                        getRequest.setHeader("Authorization", "Bearer " + client.getAuthToken());
+
+                        //execute the request and put it in an HttpReponse
+                        HttpResponse response = tempClient.execute(getRequest);
+
+                        //Status line from our response of our execution of the request
+                        StatusLine statusLine = response.getStatusLine();
+                        if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
+
+                            //Create a new File Output Stream pointing to the directory we just created
+                            FileOutputStream fos = new FileOutputStream(new File(path + strTitle + "." + fileType.toLowerCase()));
+
+                            //Get the entity from our response
+                            HttpEntity entity = response.getEntity();
+
+                            //Write to the file output stream
+                            entity.writeTo(fos);
+                            entity.consumeContent();
+                            fos.flush();
+                            fos.close();
+                            System.out.println("success  >>>" + statusLine.getReasonPhrase());
+                            progressDialog.dismiss();
+                        } else {
+                            progressDialog.dismiss();
+                            // Closes the connection.
+                            System.out.println("error " + statusLine.getReasonPhrase());
+                            response.getEntity().getContent().close();
+                            throw new IOException(statusLine.getReasonPhrase());
+                        }
+                    }
+                } catch (Exception e) {
+                    //error handling
+                    progressDialog.dismiss();
+                    e.printStackTrace();
+                    System.out.println("download exception " + e.getMessage());
+                }
+
+            }
+        }).start();
+    }
+
+    public boolean checkPermission() {
+        int currentAPIVersion = Build.VERSION.SDK_INT;
+        if (currentAPIVersion >= android.os.Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale((Activity) this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+                    alertBuilder.setCancelable(true);
+                    alertBuilder.setTitle("Permission necessary");
+                    alertBuilder.setMessage("Please grant all permissions");
+                    alertBuilder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                        @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+                        public void onClick(DialogInterface dialog, int which) {
+                            ActivityCompat.requestPermissions(ProductsActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_WRITE_CALENDAR);
+                        }
+                    });
+                    AlertDialog alert = alertBuilder.create();
+                    alert.show();
+                } else {
+                    ActivityCompat.requestPermissions(ProductsActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_WRITE_CALENDAR);
+                }
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return true;
         }
-        protected void onProgressUpdate(Integer... progress) {
-            //This method runs on the UI thread, it receives progress updates
-            //from the background thread and publishes them to the status bar
-        }
-        protected void onPostExecute(Void result)    {
-            //The task is complete, tell the status bar about it
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_WRITE_CALENDAR:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    //writeCalendarEvent();
+                    //recreate();
+                } else {
+                    //code for deny
+                }
+                break;
         }
     }
 }

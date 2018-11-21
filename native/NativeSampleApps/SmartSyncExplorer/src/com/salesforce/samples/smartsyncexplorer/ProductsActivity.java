@@ -1,6 +1,5 @@
 package com.salesforce.samples.smartsyncexplorer;
 
-import android.Manifest;
 import android.accounts.Account;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -16,6 +15,7 @@ import android.content.IntentFilter;
 import android.content.Loader;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -127,11 +127,12 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
 
     private void callProductApi(final RestClient client) {
         progressDialog.show();
+        progressDialog.setMessage("Loading Products...");
         RestRequest restRequest =
                 null;
         try {
             restRequest = RestRequest.getRequestForQuery(
-                    getString(R.string.api_version), "SELECT name,id,ProductCode FROM product2");
+                    getString(R.string.api_version), "SELECT name,id,ProductCode,Family FROM product2");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
             System.out.println("exception is " + e.getMessage());
@@ -142,7 +143,9 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
             public void onSuccess(RestRequest request, RestResponse response) {
                 System.out.println("success product Activity product2" + request);
                 System.out.println("success product Activity product2" + response);
-                progressDialog.dismiss();
+                if (progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
                 try {
                     System.out.println("success product Activity sdsdsdsdsd" + response.asJSONObject().getJSONArray("records"));
                 } catch (JSONException | IOException e) {
@@ -196,7 +199,9 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
             @Override
             public void onError(Exception exception) {
                 exception.printStackTrace();
-                progressDialog.dismiss();
+                if (progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
                 System.out.println("failed " + exception.getMessage());
                 runOnUiThread(new Runnable() {
                     @Override
@@ -277,6 +282,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
 
     private void setAttachmentSoup(final RestClient client, final String productCode) {
         progressDialog.show();
+        progressDialog.setMessage("Loading Attachments...");
         RestRequest restRequest =
                 null;
         try {
@@ -294,7 +300,14 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
             @Override
             public void onSuccess(RestRequest request, final RestResponse response) {
                 System.out.println("success product Activity" + request);
-                progressDialog.dismiss();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        progressDialog.show();
+                        progressDialog.setMessage("Loading Attachments...");
+                    }
+                });
+
                 try {
                     System.out.println("success product Activity size of records" + response.asJSONObject().getJSONArray("records").length());
                 } catch (JSONException | IOException e) {
@@ -311,6 +324,9 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                                 public void run() {*/
                         inserAttachments(response.asJSONObject().getJSONArray("records"));
                         downloadFile(client, response, productCode);
+                        if (progressDialog.isShowing()) {
+                            progressDialog.dismiss();
+                        }
                                /* }
                             });*/
                         //}
@@ -326,7 +342,9 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
             @Override
             public void onError(Exception exception) {
                 exception.printStackTrace();
-                progressDialog.dismiss();
+                if (progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
                 System.out.println("failed " + exception.getMessage());
                 runOnUiThread(new Runnable() {
                     @Override
@@ -343,6 +361,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
             public void run() {
 
                 progressDialog.show();
+                progressDialog.setMessage("Saving Attachments...");
                 try {
                     if (records != null) {
                         for (int i = 0; i < records.length(); i++) {
@@ -354,14 +373,22 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                                 } catch (JSONException exc) {
                                     Log.e(TAG, "Error occurred while attempting to insert account. "
                                             + "Please verify validity of JSON data set.");
-                                    progressDialog.dismiss();
+                                    if (progressDialog.isShowing()) {
+                                        progressDialog.dismiss();
+                                    }
                                 }
                             }
                         }
-                        progressDialog.dismiss();
+                        if (progressDialog.isShowing()) {
+                            if (progressDialog.isShowing()) {
+                                progressDialog.dismiss();
+                            }
+                        }
                     }
                 } catch (JSONException e) {
-                    progressDialog.dismiss();
+                    if (progressDialog.isShowing()) {
+                        progressDialog.dismiss();
+                    }
                     Log.e(TAG, "Error occurred while attempting to insert accounts. "
                             + "Please verify validity of JSON data set.");
                 }
@@ -592,7 +619,10 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         //Get the external storage directory and make a new directory for our attachments
         new Thread(new Runnable() {
             public void run() {
-
+                if (!progressDialog.isShowing()) {
+                    progressDialog.show();
+                    progressDialog.setMessage("Downloading Attachments...");
+                }
                 String path = Environment.getExternalStorageDirectory() + "/" + "SalesForce/";
                 File dir = new File(path);
                 if (!dir.exists()) {
@@ -608,16 +638,20 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
 
                     //Loop through our attachment records
                     for (int i = 0; i < records.length(); i++) {
-                        progressDialog.dismiss();
                         JSONObject jsonObject = records.getJSONObject(i).getJSONObject("ContentDocument");
                         String strTitle = jsonObject.getString("Title");
                         String fileType = jsonObject.getString("FileType");
-                        String linkedEntityId = records.getJSONObject(i).getString("ContentDocumentId");
+                        String linkedEntityId = records.getJSONObject(i).getString("LinkedEntityId");
+                        JSONObject contentDocument = records.getJSONObject(i).getJSONObject("ContentDocument");
+                        JSONObject attributes = contentDocument.getJSONObject("attributes");
+                        String url = attributes.getString("url");
 
                         System.out.println("inside download loop title is " + strTitle + "   filetype is " + fileType + "   liked entity id is " + linkedEntityId);
 
                         //String attUrl = client.getClientInfo().resolveUrl(records.getJSONObject(i).getString("Body")).toString();
-                        String attUrl = client.getClientInfo().resolveUrl("/servlet/servlet.FileDownload?file=" + linkedEntityId).toString();
+                        // String attUrl = client.getClientInfo().resolveUrl("/servlet/servlet.FileDownload?file=" + linkedEntityId).toString();
+                        String attUrl = client.getClientInfo().resolveUrl(url).toString()+"/"+linkedEntityId; /*+ linkedEntityId).toString()*/
+                        ;
 
                         //Create a new HttpClient
                         HttpClient tempClient = new DefaultHttpClient();
@@ -639,12 +673,14 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                         //execute the request and put it in an HttpReponse
                         HttpResponse response = tempClient.execute(getRequest);
 
+                        System.out.println("request is " + getRequest.getAllHeaders());
+
                         //Status line from our response of our execution of the request
                         StatusLine statusLine = response.getStatusLine();
                         if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
 
                             //Create a new File Output Stream pointing to the directory we just created
-                            FileOutputStream fos = new FileOutputStream(new File(path + strTitle + "." + fileType.toLowerCase()));
+                            FileOutputStream fos = new FileOutputStream(new File(path + linkedEntityId.trim() + "." + fileType.toLowerCase().trim()));
 
                             //Get the entity from our response
                             HttpEntity entity = response.getEntity();
@@ -655,9 +691,13 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                             fos.flush();
                             fos.close();
                             System.out.println("success  >>>" + statusLine.getReasonPhrase());
-                            progressDialog.dismiss();
+                            if (progressDialog.isShowing()) {
+                                progressDialog.dismiss();
+                            }
                         } else {
-                            progressDialog.dismiss();
+                            if (progressDialog.isShowing()) {
+                                progressDialog.dismiss();
+                            }
                             // Closes the connection.
                             System.out.println("error " + statusLine.getReasonPhrase());
                             response.getEntity().getContent().close();
@@ -666,7 +706,9 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                     }
                 } catch (Exception e) {
                     //error handling
-                    progressDialog.dismiss();
+                    if (progressDialog.isShowing()) {
+                        progressDialog.dismiss();
+                    }
                     e.printStackTrace();
                     System.out.println("download exception " + e.getMessage());
                 }
@@ -687,13 +729,13 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                     alertBuilder.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                         @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
                         public void onClick(DialogInterface dialog, int which) {
-                            ActivityCompat.requestPermissions(ProductsActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_WRITE_CALENDAR);
+                            ActivityCompat.requestPermissions(ProductsActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE, android.Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_WRITE_CALENDAR);
                         }
                     });
                     AlertDialog alert = alertBuilder.create();
                     alert.show();
                 } else {
-                    ActivityCompat.requestPermissions(ProductsActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_WRITE_CALENDAR);
+                    ActivityCompat.requestPermissions(ProductsActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE, android.Manifest.permission.READ_EXTERNAL_STORAGE}, MY_PERMISSIONS_REQUEST_WRITE_CALENDAR);
                 }
                 return false;
             } else {

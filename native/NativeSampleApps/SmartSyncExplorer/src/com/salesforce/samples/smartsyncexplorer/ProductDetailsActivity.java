@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.webkit.MimeTypeMap;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.rest.RestClient;
@@ -41,12 +42,17 @@ public class ProductDetailsActivity extends SalesforceActivity {
     private SyncManager syncMgr;
     String productCode;
     RecyclerView rvDetails;
+    TextView tvId, tvName, tvFamily, tvNodata;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_product_details);
         rvDetails = findViewById(R.id.rvDetails);
+        tvId = findViewById(R.id.tvId);
+        tvName = findViewById(R.id.tvName);
+        tvFamily = findViewById(R.id.tvFamily);
+        tvNodata = findViewById(R.id.tvNodata);
         SmartSyncSDKManager sdkManager = SmartSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore(sdkManager.getUserAccountManager().getCurrentUser());
         syncMgr = SyncManager.getInstance(sdkManager.getUserAccountManager().getCurrentUser());
@@ -76,31 +82,22 @@ public class ProductDetailsActivity extends SalesforceActivity {
         }
         System.out.println("fhgffjfjfgggfgf " + sObject.getProductDetailName());
         System.out.println("fhgffjfjfgggfgf  results1 " + results1);*/
-
-/*
-        final QuerySpec querySpec1 = QuerySpec.buildExactQuerySpec(
-                "attachments", AttachmentObject.ATTACHMENT_ID, productCode, null, null, 1);
-        JSONArray results1 = null;
-        List<AttachmentObject> sObject = new ArrayList<>();
+        ProductObject productObject;
         try {
-            results1 = smartStore.query(querySpec1, 0);
-            System.out.println("size is>>>"+results1.length());
-            for (int i = 0; i < results1.length(); i++) {
-                sObject.add(new AttachmentObject(results1.getJSONObject(i)));
-            }
+            JSONObject contact = smartStore.retrieve(ProductListLoader.PRODUCT_SOUP,
+                    smartStore.lookupSoupEntryId(ProductListLoader.PRODUCT_SOUP,
+                            Constants.ID, productCode)).getJSONObject(0);
+            System.out.println(" jsonobject  " + contact);
+            productObject = new ProductObject(contact);
+            System.out.println("name is " + productObject.getProductName());
+            System.out.println("name is " + productObject.getProductFamily());
+            tvId.setText("Product Id : " + productObject.getProductId());
+            tvFamily.setText("Product Family : " + productObject.getProductFamily());
+            tvName.setText("Product Name : " + productObject.getProductName());
         } catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while parsing", e);
-        } catch (SmartSqlHelper.SmartSqlException e) {
-            Log.e(TAG, "SmartSqlException occurred while fetching data", e);
+            e.printStackTrace();
         }
-        System.out.println("size is>>>"+sObject.size());
-        for (int i = 0; i < sObject.size(); i++) {
-            System.out.println("getAttachmentTitle " + sObject.get(i).getAttachmentTitle());
-            System.out.println("fhgffjfjfgggfgf  results1 " + results1);
-        }*/
 
-        /*final QuerySpec querySpec = QuerySpec.buildAllQuerySpec("attachments",
-                AttachmentObject.ATTACHMENT_ID, QuerySpec.Order.ascending, 100000);*/
         final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(
                 "attachments", AttachmentObject.ATTACHMENT_ID, productCode, null, null, 10000);
         JSONArray results = null;
@@ -117,40 +114,44 @@ public class ProductDetailsActivity extends SalesforceActivity {
         }
         System.out.println("products in do products    attachmnnts >>>>>> /n" + products);
 
-        AttachmentAdapter mAdapter = new AttachmentAdapter(products);
-        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
-        rvDetails.setLayoutManager(mLayoutManager);
-        rvDetails.setAdapter(mAdapter);
+        if (!products.isEmpty()) {
+            AttachmentAdapter mAdapter = new AttachmentAdapter(products);
+            RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+            rvDetails.setLayoutManager(mLayoutManager);
+            rvDetails.setAdapter(mAdapter);
 
-        mAdapter.setOnItemClickListener(new AttachmentAdapter.ClickListener() {
-            @SuppressLint("IntentReset")
-            @Override
-            public void onItemClick(int position, View v) {
-                String path = Environment.getExternalStorageDirectory() + "/" + "SalesForce/";
-                File file = new File(path + products.get(position).getAttachmentTitle() + "." + products.get(position).getContentDocumentfileType().toLowerCase());
-                System.out.println("uri is " + file);
-                if (file.exists()) {
-                    Uri uri;
-                    if (Build.VERSION.SDK_INT < 24) {
-                        uri = Uri.fromFile(file);
+            mAdapter.setOnItemClickListener(new AttachmentAdapter.ClickListener() {
+                @SuppressLint("IntentReset")
+                @Override
+                public void onItemClick(int position, View v) {
+                    String path = Environment.getExternalStorageDirectory() + "/" + "SalesForce/";
+                    File file = new File(path + products.get(position).getContentDocumentId().trim() + "." + products.get(position).getContentDocumentfileType().toLowerCase().trim());
+                    System.out.println("uri is " + file);
+                    if (file.exists()) {
+                        Uri uri;
+                        if (Build.VERSION.SDK_INT < 24) {
+                            uri = Uri.fromFile(file);
+                        } else {
+                            uri = Uri.parse(file.getPath()); // My work-around for new SDKs, doesn't work on older ones.
+                        }
+                        Intent getIntent = new Intent(Intent.ACTION_VIEW);
+
+                        getIntent.setDataAndType(uri, getMimeType(uri.toString()));
+                        startActivityForResult(Intent.createChooser(getIntent, "Open"), 101);
+                        //startActivity(getIntent);
                     } else {
-                        uri = Uri.parse(file.getPath()); // My work-around for new SDKs, doesn't work on older ones.
+                        Toast.makeText(ProductDetailsActivity.this, "Unable to find application that will open " + products.get(position).getContentDocumentfileType().toLowerCase(), Toast.LENGTH_LONG).show();
                     }
-                    Intent getIntent = new Intent(Intent.ACTION_VIEW);
-
-                    getIntent.setDataAndType(uri, getMimeType(uri.toString()));
-                    startActivityForResult(Intent.createChooser(getIntent, "Open"), 101);
-                    //startActivity(getIntent);
-                } else {
-                    Toast.makeText(ProductDetailsActivity.this, "Unable to find application that will open " + products.get(position).getContentDocumentfileType().toLowerCase(), Toast.LENGTH_LONG).show();
                 }
-            }
 
-            @Override
-            public void onItemLongClick(int position, View v) {
+                @Override
+                public void onItemLongClick(int position, View v) {
 
-            }
-        });
+                }
+            });
+        } else {
+            tvNodata.setVisibility(View.VISIBLE);
+        }
     }
 
     public static String getMimeType(String url) {

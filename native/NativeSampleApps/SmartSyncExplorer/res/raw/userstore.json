@@ -20,6 +20,7 @@
         { "path": "Id", "type": "string"},
         { "path": "Name", "type": "string"},
         { "path": "ProductCode", "type": "string"},
+        { "path": "Family", "type": "string"},
         { "path": "__local__", "type": "string"},
         { "path": "__locally_created__", "type": "string"},
         { "path": "__locally_updated__", "type": "string"},

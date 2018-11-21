@@ -38,6 +38,8 @@ android {
         xmlReport true
         abortOnError false
     }
+    useLibrary 'org.apache.http.legacy'
+
 }
 
 afterEvaluate {

@@ -14,6 +14,12 @@ public class ProductObject extends SalesforceObject {
     public static final String PRODUCT_ID = "Id";
     public static final String PRODUCT_CODE = "ProductCode";
 
+    public String getProductFamily() {
+        return sanitizeText(rawData.optString(PRODUCT_FAMILY));
+    }
+
+    public static final String PRODUCT_FAMILY = "Family";
+
 
 
     private final boolean isLocallyCreated;

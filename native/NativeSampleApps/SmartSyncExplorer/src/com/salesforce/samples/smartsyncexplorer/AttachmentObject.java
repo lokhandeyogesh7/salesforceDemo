@@ -1,5 +1,6 @@
 package com.salesforce.samples.smartsyncexplorer;
 
+
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ProductDetailsActivity">
+
+    <!--
+        <Button
+            android:id="@+id/btnPriceBook"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Price Book" />
+
+        <Button
+            android:id="@+id/btnFiles"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:text="Files" />
+
+        <Button
+            android:id="@+id/btnAttachments"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:text="Attachments" />-->
+
+    <TextView
+        android:id="@+id/tvId"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="Product Id : " />
+
+    <TextView
+        android:id="@+id/tvName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvId"
+        android:padding="10dp"
+        android:text="Product Name : " />
+
+    <TextView
+        android:id="@+id/tvFamily"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvName"
+        android:padding="10dp"
+        android:text="Product Family : " />
+
+    <TextView
+        android:id="@+id/Tvtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/tvFamily"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="10dp"
+        android:layout_marginTop="10dp"
+        android:background="@color/record_campaign"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="Attachments : "
+        android:textColor="@android:color/holo_blue_dark"
+        android:textStyle="bold" />
+
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/rvDetails"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/Tvtitle"
+        android:layout_margin="10dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_below="@+id/Tvtitle"
+        android:id="@+id/tvNodata"
+        android:visibility="gone"
+        android:text="No Data Available"/>
+
+</RelativeLayout>

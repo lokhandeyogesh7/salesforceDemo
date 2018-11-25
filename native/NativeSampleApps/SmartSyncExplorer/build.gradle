@@ -8,6 +8,10 @@ dependencies {
 
     //recyclerview
     implementation 'com.android.support:recyclerview-v7:27.1.1'
+
+  /*  compile 'org.apache.httpcomponents:httpcore:4.4.1'
+    compile 'org.apache.httpcomponents:httpclient:4.5'*/
+    implementation 'org.apache.directory.studio:org.apache.commons.io:2.4'
 }
 
 android {

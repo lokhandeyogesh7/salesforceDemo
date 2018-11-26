@@ -6,25 +6,44 @@
     android:layout_height="match_parent"
     tools:context=".ProductsActivity">
 
-    <Button
-        android:id="@+id/btnGetAttachments"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/llTop"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Get Details" />
+        android:orientation="horizontal"
+        android:weightSum="10">
 
-    <Button
-        android:id="@+id/btnDownloadAttchments"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:text="Get Attachments" />
+        <Button
+            android:id="@+id/btnGetAttachments"
+            style="@style/Base.TextAppearance.AppCompat.Widget.Button.Borderless.Colored"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="5"
+            android:text="Get Details"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textColor="@android:color/secondary_text_light"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnDownloadAttchments"
+            style="@style/Base.TextAppearance.AppCompat.Widget.Button.Borderless.Colored"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="5"
+            android:text="Get Attachments"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textColor="@android:color/secondary_text_light"
+            android:textStyle="bold" />
+
+    </LinearLayout>
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rvProducts"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/btnGetAttachments"
+        android:layout_below="@+id/llTop"
         android:layout_margin="10dp" />
 
 </RelativeLayout>

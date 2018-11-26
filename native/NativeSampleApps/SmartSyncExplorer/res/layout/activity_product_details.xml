@@ -6,80 +6,106 @@
     android:layout_height="match_parent"
     tools:context=".ProductDetailsActivity">
 
-    <!--
-        <Button
-            android:id="@+id/btnPriceBook"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Price Book" />
+    <LinearLayout
+        android:id="@+id/llTop"
+        android:weightSum="10"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-        <Button
-            android:id="@+id/btnFiles"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:text="Files" />
+    <Button
+        android:id="@+id/btnDetails"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        style="@style/Base.TextAppearance.AppCompat.Widget.Button.Borderless.Colored"
+        android:layout_weight="5"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="@android:color/secondary_text_light"
+        android:textStyle="bold"
+        android:text="Details" />
 
-        <Button
-            android:id="@+id/btnAttachments"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:text="Attachments" />-->
+    <Button
+        android:id="@+id/btnAttachments"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="5"
+        android:textAllCaps="false"
+        android:textSize="16sp"
+        android:textColor="@android:color/secondary_text_light"
+        android:textStyle="bold"
+        style="@style/Base.TextAppearance.AppCompat.Widget.Button.Borderless.Colored"
+        android:text="Attachments" />
+
+    </LinearLayout>
+
+    <!--   <Button
+           android:id="@+id/btnAttachments"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:layout_alignParentEnd="true"
+           android:text="Attachments" />-->
 
     <TextView
-        android:id="@+id/tvId"
+        android:id="@+id/tvtitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="10dp"
-        android:text="Product Id : " />
-
-    <TextView
-        android:id="@+id/tvName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/tvId"
-        android:padding="10dp"
-        android:text="Product Name : " />
-
-    <TextView
-        android:id="@+id/tvFamily"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/tvName"
-        android:padding="10dp"
-        android:text="Product Family : " />
-
-    <TextView
-        android:id="@+id/Tvtitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/tvFamily"
+        android:layout_below="@+id/llTop"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="10dp"
-        android:layout_marginTop="10dp"
         android:background="@color/record_campaign"
         android:gravity="center"
         android:padding="10dp"
         android:text="Attachments : "
+        android:textSize="16sp"
         android:textColor="@android:color/holo_blue_dark"
         android:textStyle="bold" />
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:id="@+id/rlDetails"
+        android:layout_below="@+id/tvtitle"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/tvId"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:text="Product Id : " />
+
+        <TextView
+            android:id="@+id/tvName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tvId"
+            android:padding="10dp"
+            android:text="Product Name : " />
+
+        <TextView
+            android:id="@+id/tvFamily"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tvName"
+            android:padding="10dp"
+            android:text="Product Family : " />
+
+    </RelativeLayout>
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rvDetails"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/Tvtitle"
+        android:layout_below="@+id/tvtitle"
         android:layout_margin="10dp" />
 
     <TextView
+        android:id="@+id/tvNodata"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@+id/tvtitle"
         android:gravity="center"
-        android:layout_below="@+id/Tvtitle"
-        android:id="@+id/tvNodata"
-        android:visibility="gone"
-        android:text="No Data Available"/>
+        android:text="No Data Available"
+        android:visibility="gone" />
 
 </RelativeLayout>

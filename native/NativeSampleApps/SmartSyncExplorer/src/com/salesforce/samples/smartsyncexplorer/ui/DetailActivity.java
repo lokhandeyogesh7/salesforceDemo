@@ -110,8 +110,8 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	    logoutItem.setVisible(false);
 	    final MenuItem addItem = menu.findItem(R.id.action_add);
 	    addItem.setVisible(false);
-	    final MenuItem refreshItem = menu.findItem(R.id.action_refresh);
-	    refreshItem.setIcon(R.drawable.ic_action_save);
+	    //final MenuItem refreshItem = menu.findItem(R.id.action_refresh);
+	    //refreshItem.setIcon(R.drawable.ic_action_save);
 	    return super.onCreateOptionsMenu(menu);
 	}
 

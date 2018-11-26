@@ -12,7 +12,8 @@
 
     <style name="SalesforceSDKActionBar"
         parent="@android:style/Widget.Holo.Light.ActionBar.Solid.Inverse">
-        <item name="android:background">@drawable/sf__header_bg</item>
+      <!--  <item name="android:background">@drawable/sf__header_bg</item>-->
+        <item name="android:background">@android:color/holo_purple</item>
     </style>
 
     <style name="SalesforceSDK.ServerPicker">

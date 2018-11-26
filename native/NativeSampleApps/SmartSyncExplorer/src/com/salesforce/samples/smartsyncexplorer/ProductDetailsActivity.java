@@ -12,6 +12,8 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.webkit.MimeTypeMap;
+import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,7 +44,9 @@ public class ProductDetailsActivity extends SalesforceActivity {
     private SyncManager syncMgr;
     String productCode;
     RecyclerView rvDetails;
-    TextView tvId, tvName, tvFamily, tvNodata;
+    TextView tvId, tvName, tvFamily, tvNodata,tvTitle;
+    Button btnDetails,btnAttachments;
+    RelativeLayout rlDetails;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,17 +54,36 @@ public class ProductDetailsActivity extends SalesforceActivity {
         setContentView(R.layout.activity_product_details);
         rvDetails = findViewById(R.id.rvDetails);
         tvId = findViewById(R.id.tvId);
+        rlDetails = findViewById(R.id.rlDetails);
         tvName = findViewById(R.id.tvName);
         tvFamily = findViewById(R.id.tvFamily);
         tvNodata = findViewById(R.id.tvNodata);
+        tvTitle = findViewById(R.id.tvtitle);
+        btnDetails = findViewById(R.id.btnDetails);
+        btnAttachments = findViewById(R.id.btnAttachments);
         SmartSyncSDKManager sdkManager = SmartSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore(sdkManager.getUserAccountManager().getCurrentUser());
         syncMgr = SyncManager.getInstance(sdkManager.getUserAccountManager().getCurrentUser());
         productCode = getIntent().getStringExtra("product_code");
         System.out.println("product code " + productCode);
 
-        getActionBar().setTitle("Attachments");
+        getActionBar().setTitle("Product Details");
         getActionBar().setDisplayHomeAsUpEnabled(true);
+
+
+        btnDetails.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showProductDetails();
+            }
+        });
+
+        btnAttachments.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                setAttachmentView();
+            }
+        });
     }
 
     @Override
@@ -82,22 +105,17 @@ public class ProductDetailsActivity extends SalesforceActivity {
         }
         System.out.println("fhgffjfjfgggfgf " + sObject.getProductDetailName());
         System.out.println("fhgffjfjfgggfgf  results1 " + results1);*/
-        ProductObject productObject;
-        try {
-            JSONObject contact = smartStore.retrieve(ProductListLoader.PRODUCT_SOUP,
-                    smartStore.lookupSoupEntryId(ProductListLoader.PRODUCT_SOUP,
-                            Constants.ID, productCode)).getJSONObject(0);
-            System.out.println(" jsonobject  " + contact);
-            productObject = new ProductObject(contact);
-            System.out.println("name is " + productObject.getProductName());
-            System.out.println("name is " + productObject.getProductFamily());
-            tvId.setText("Product Id : " + productObject.getProductId());
-            tvFamily.setText("Product Family : " + productObject.getProductFamily());
-            tvName.setText("Product Name : " + productObject.getProductName());
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        showProductDetails();
 
+        //setAttachmentView();
+    }
+
+    private void setAttachmentView() {
+
+        tvTitle.setText("Attachments");
+        rlDetails.setVisibility(View.GONE);
+        rvDetails.setVisibility(View.VISIBLE);
+        tvNodata.setVisibility(View.GONE);
         final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(
                 "attachments", AttachmentObject.ATTACHMENT_ID, productCode, null, null, 10000);
         JSONArray results = null;
@@ -151,6 +169,29 @@ public class ProductDetailsActivity extends SalesforceActivity {
             });
         } else {
             tvNodata.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void showProductDetails() {
+        tvTitle.setText("Details");
+        rlDetails.setVisibility(View.VISIBLE);
+        rvDetails.setVisibility(View.GONE);
+        tvNodata.setVisibility(View.GONE);
+
+        ProductObject productObject;
+        try {
+            JSONObject contact = smartStore.retrieve(ProductListLoader.PRODUCT_SOUP,
+                    smartStore.lookupSoupEntryId(ProductListLoader.PRODUCT_SOUP,
+                            Constants.ID, productCode)).getJSONObject(0);
+            System.out.println(" jsonobject  " + contact);
+            productObject = new ProductObject(contact);
+            System.out.println("name is " + productObject.getProductName());
+            System.out.println("name is " + productObject.getProductFamily());
+            tvId.setText("Product Id : " + productObject.getProductId());
+            tvFamily.setText("Product Family : " + productObject.getProductFamily());
+            tvName.setText("Product Name : " + productObject.getProductName());
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
     }
 

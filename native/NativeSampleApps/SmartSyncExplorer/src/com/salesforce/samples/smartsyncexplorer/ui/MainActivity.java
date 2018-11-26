@@ -260,19 +260,19 @@ public class MainActivity extends SalesforceListActivity implements
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.action_refresh:
+           /* case R.id.action_refresh:
                 Toast.makeText(this, "Synchronizing...", Toast.LENGTH_SHORT).show();
-                requestSync(false /* sync up + sync down */);
-                return true;
+                requestSync(false *//* sync up + sync down *//*);
+                return true;*/
             case R.id.action_logout:
                 logoutConfirmationDialog.show(getFragmentManager(), "LogoutDialog");
                 return true;
-            case R.id.action_switch_user:
+            /*case R.id.action_switch_user:
                 launchAccountSwitcherActivity();
-                return true;
-            case R.id.action_inspect_db:
+                return true;*/
+           /* case R.id.action_inspect_db:
                 launchSmartStoreInspectorActivity();
-                return true;
+                return true;*/
             case R.id.action_add:
                 launchDetailActivity(Constants.EMPTY_STRING, "New Contact",
                         Constants.EMPTY_STRING);

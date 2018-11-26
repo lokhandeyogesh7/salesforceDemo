@@ -6,9 +6,25 @@
     android:layout_height="match_parent"
     tools:context=".ProductsActivity">
 
+    <Button
+        android:id="@+id/btnGetAttachments"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Get Details" />
+
+    <Button
+        android:id="@+id/btnDownloadAttchments"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:text="Get Attachments" />
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rvProducts"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:layout_below="@+id/btnGetAttachments"
+        android:layout_margin="10dp" />
 
 </RelativeLayout>

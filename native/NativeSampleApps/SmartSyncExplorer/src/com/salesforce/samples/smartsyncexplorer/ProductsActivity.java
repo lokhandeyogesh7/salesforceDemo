@@ -13,9 +13,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,59 +28,43 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.webkit.MimeTypeMap;
+import android.widget.Button;
 import android.widget.SearchView;
 
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.rest.files.FileRequests;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
-import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 import com.salesforce.samples.smartsyncexplorer.sync.ContactSyncAdapter;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.*;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.ByteArrayBuffer;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -105,6 +87,8 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
     public static final int MY_PERMISSIONS_REQUEST_WRITE_CALENDAR = 123;
     ProgressDialog progressDialog;
 
+    Button btnGetAttachments, btnDownloadAttachments;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -113,6 +97,8 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         getActionBar().setDisplayHomeAsUpEnabled(true);
 
         rvProducts = findViewById(R.id.rvProducts);
+        btnGetAttachments = findViewById(R.id.btnGetAttachments);
+        btnDownloadAttachments = findViewById(R.id.btnDownloadAttchments);
 
 
         loadCompleteReceiver = new LoadCompleteReceiver();
@@ -185,10 +171,13 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                        /* for (int i = 0; i < productObjects.size(); i++) {
                             setUpPricebookSoup(client, productObjects.get(i).getProductCode());
                         }*/
-                        smartStore.clearSoup("attachments");
-                        for (int j = 0; j < productObjects.size(); j++) {
-                            setAttachmentSoup(client, productObjects.get(j).getProductId());
-                        }
+
+                        btnGetAttachments.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                getAttachments(client);
+                            }
+                        });
 
                         mAdapter.setOnItemClickListener(new ProductListAdapter.ClickListener() {
                             @Override
@@ -232,7 +221,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                                 ProductObject sObject = productObjects.get(position);
                                 System.out.println("cliked object id is " + sObject.getProductCode());
                                 Intent intent = new Intent(ProductsActivity.this, ProductDetailsActivity.class);
-                                intent.putExtra("product_code", sObject.getProductCode());
+                                intent.putExtra("product_code", sObject.getProductId());
                                 startActivity(intent);
                             }
 
@@ -249,6 +238,13 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         setupPeriodicSync();
         // Sync now
         requestSync(true /* sync down only */);
+    }
+
+    private void getAttachments(RestClient client) {
+        smartStore.clearSoup("attachments");
+        for (int j = 0; j < productObjects.size(); j++) {
+            setAttachmentSoup(client, productObjects.get(j).getProductId());
+        }
     }
 
     private void setNotesSoup(RestClient client, String productCode, final String productName) {
@@ -300,9 +296,6 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         RestRequest restRequest =
                 null;
         try {
-            /*restRequest = RestRequest.getRequestForQuery(
-                    getString(R.string.api_version), "SELECT ContentDownloadUrl from ContentDocumentLink WHERE ContentDocumentId='" + productCode + "'");*/
-
             restRequest = RestRequest.getRequestForQuery(
                     getString(R.string.api_version), "SELECT ContentDocument.title,LinkedEntityId,ContentDocumentId,ContentDocument.FileType from ContentDocumentLink WHERE LinkedEntityId='" + productCode + "'");
 
@@ -332,9 +325,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
 
                 //System.out.println("success product Activity Attachment" + response.asJSONObject().getJSONArray("records"));
                 System.out.println("success product Activity Attachment product name is " + productCode);
-                if (progressDialog.isShowing()) {
-                    progressDialog.dismiss();
-                }
+                progressDialog.dismiss();
                 try {
                     if (response.asJSONObject().getJSONArray("records").length() != 0) {
                         //for (int i = 0; i < response.asJSONObject().getJSONArray("records").length(); i++) {
@@ -342,24 +333,24 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                             @Override
                             public void run() {
                                 try {
-                                    JSONArray jsonArray = response.asJSONObject().getJSONArray("records");
+                                    final JSONArray jsonArray = response.asJSONObject().getJSONArray("records");
                                     inserAttachments(jsonArray);
-                                    for (int i = 0; i < jsonArray.length(); i++) {
-                                        JSONObject jsonObject = jsonArray.getJSONObject(i).getJSONObject("ContentDocument");
-                                        System.out.println("content document "+jsonObject);
-                                        //JSONObject jsonObject1 =jsonObject.getJSONObject("attributes");
-                                        //System.out.println(" attributes "+jsonObject1);
 
-                                        requestBlob(client, jsonArray.getJSONObject(i).getString("ContentDocumentId"),jsonObject.getString("FileType"));
-                                    }
+                                    btnDownloadAttachments.setOnClickListener(new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            try {
+                                                downloadAttchmets(jsonArray, client);
+                                            } catch (JSONException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    });
+
                                     //downloadFile(client, response, productCode);
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                } catch (IOException e) {
+                                } catch (JSONException | IOException e) {
                                     e.printStackTrace();
                                 }
-                                // downloadFile(client, response, productCode);
-
                                 if (progressDialog.isShowing()) {
                                     progressDialog.dismiss();
                                 }
@@ -393,6 +384,14 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         });
     }
 
+    private void downloadAttchmets(JSONArray jsonArray, RestClient client) throws JSONException {
+        for (int i = 0; i < jsonArray.length(); i++) {
+            JSONObject jsonObject = jsonArray.getJSONObject(i).getJSONObject("ContentDocument");
+            System.out.println("content document " + jsonObject);
+            requestBlob(client, jsonArray.getJSONObject(i).getString("ContentDocumentId"), jsonObject.getString("FileType"));
+        }
+    }
+
     private void requestBlob(final RestClient client, final String contentDocumentId, final String fileType) {
 
         RestRequest restRequest =
@@ -402,11 +401,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         strings.add("VersionData");
         try {
             restRequest = RestRequest.getRequestForQuery(
-                    /* getString(R.string.api_version), "select id, versiondata from contentversion where contentdocumentid='0696F000008EDZGQA4'");*/
-                    getString(R.string.api_version), "select id, versiondata from contentversion where contentdocumentid='"+contentDocumentId+"'");
-            /*restRequest = RestRequest.getRequestForRetrieve(
-                    getString(R.string.api_version), "ContentVersion", "0696F000008EDZGQA4", strings);*/
-            // restRequest = RestRequest.getRequestForQuery(getString(R.string.api_version),)
+                    getString(R.string.api_version), "select id, versiondata from contentversion where contentdocumentid='" + contentDocumentId + "'");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -426,7 +421,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                     e.printStackTrace();
                 }
 
-                LongOperation longOperation = new LongOperation(client, versionData,fileType,contentDocumentId);
+                LongOperation longOperation = new LongOperation(client, versionData, fileType, contentDocumentId);
                 longOperation.execute();
 
             }
@@ -448,7 +443,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
     private class LongOperation extends AsyncTask<String, Void, String> {
 
         RestClient client;
-        String versionData,fileType,contentDocumentId;
+        String versionData, fileType, contentDocumentId;
         byte[] arrBytes;
 
         public LongOperation(RestClient client1, String versionDat1a, String fileType, String contentDocumentId) {
@@ -460,42 +455,6 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
 
         @Override
         protected String doInBackground(String... params) {
-      /*      try {
-                String s = client.getClientInfo().resolveUrl(versionData).toString();
-                URL url = new URL(s);
-                System.out.println("string url is "+url);
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestProperty("Authorization", "Bearer " + client.getAuthToken());
-                urlConnection.setRequestMethod("GET");
-                urlConnection.setRequestProperty("Content-Type", "application/json");
-
-                urlConnection.connect();
-
-                int statusCode = urlConnection.getResponseCode();
-                System.out.println(" request body is "+urlConnection.getRequestMethod());
-                System.out.println(" request body is "+urlConnection.getHeaderField(1));
-                if (statusCode == 200) {
-                    InputStream it = new BufferedInputStream(urlConnection.getInputStream());
-                    InputStreamReader read = new InputStreamReader(it);
-                    BufferedReader buff = new BufferedReader(read);
-                    StringBuilder dta = new StringBuilder();
-                    String chunks;
-                    while ((chunks = buff.readLine()) != null) {
-                        dta.append(chunks);
-                    }
-                    System.out.println(" blob is "+chunks+">>> "+it.read());
-                } else {
-                    //Handle else
-                }
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-
-            return "Executed";
-
-
-*/
-
             String result;
             String inputLine;
             System.out.println("do in background ");
@@ -527,8 +486,8 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
 
                 InputStream is = new ByteArrayInputStream(bytes);
 
-                String  mime = URLConnection.guessContentTypeFromName(stringUrl);
-                System.out.println("mimetype is "+mime);
+                String mime = URLConnection.guessContentTypeFromName(stringUrl);
+                System.out.println("mimetype is " + mime);
 
                 arrBytes = bytes;
 
@@ -608,7 +567,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
             /*byte[] bytes = result.getBytes("UTF-8");
             System.out.println("bytes is "+bytes);*/
             try {
-                fos = new FileOutputStream(new File(path + contentDocumentId+ "." + fileType.toLowerCase().trim()));
+                fos = new FileOutputStream(new File(path + contentDocumentId + "." + fileType.toLowerCase().trim()));
 
                 //Get the entity from our response
                 fos.write(arrBytes);

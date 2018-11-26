@@ -36,7 +36,7 @@ public class ProductObject extends SalesforceObject {
     public ProductObject(JSONObject data) {
         super(data);
         objectType = Constants.PRODUCTS;
-        objectId = data.optString(Constants.ID);
+        objectId = data.optString(rawData.optString(PRODUCT_ID));
         name = data.optString(PRODUCT_NAME);
         isLocallyCreated = data.optBoolean(SyncTarget.LOCALLY_CREATED);
         isLocallyDeleted = data.optBoolean(SyncTarget.LOCALLY_DELETED);

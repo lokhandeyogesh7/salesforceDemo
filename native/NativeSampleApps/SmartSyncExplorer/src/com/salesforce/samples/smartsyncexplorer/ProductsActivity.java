@@ -316,6 +316,9 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
 
                 System.out.println("success product Activity Attachment" + response);
                 System.out.println("success product Activity Attachment product name is " + productCode);
+                if (progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
                 try {
                     if (response.asJSONObject().getJSONArray("records").length() != 0) {
                         //for (int i = 0; i < response.asJSONObject().getJSONArray("records").length(); i++) {
@@ -323,7 +326,14 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                                 @Override
                                 public void run() {*/
                         inserAttachments(response.asJSONObject().getJSONArray("records"));
-                        downloadFile(client, response, productCode);
+                        //downloadFile(client, response, productCode);
+                        JSONArray jsonArray = response.asJSONObject().getJSONArray("records");
+                        for (int i = 0; i < jsonArray.length(); i++) {
+                            System.out.println("content id is "+jsonArray.getJSONObject(i).get("ContentDocumentId"));
+                            getBlob(client, String.valueOf(jsonArray.getJSONObject(i).get("ContentDocumentId")));
+                        }
+                        //
+
                         if (progressDialog.isShowing()) {
                             progressDialog.dismiss();
                         }
@@ -353,6 +363,53 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                 });
             }
         });
+    }
+
+    private void getBlob(final RestClient client, final String productCode) {
+//        progressDialog.show();
+        //progressDialog.setMessage("Loading Blob...");
+        RestRequest restRequest =
+                null;
+        try {
+            restRequest = RestRequest.getRequestForQuery(
+                    getString(R.string.api_version), "SELECT id,ContentUrl,VersionData from ContentVersion WHERE ContentDocumentId='" + productCode + "'");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+
+        client.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
+            @Override
+            public void onSuccess(RestRequest request, final RestResponse response) {
+                System.out.println("success product Blob" + request);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        progressDialog.show();
+                        progressDialog.setMessage("Loading BloB...");
+                    }
+                });
+
+                try {
+                    System.out.println("success product blob size of records" + response.asJSONObject().getJSONArray("records"));
+                    for (int i = 0; i <  response.asJSONObject().getJSONArray("records").length(); i++) {
+                        downloadFile(client,response,productCode);
+                    }
+                } catch (JSONException | IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onError(Exception exception) {
+                exception.printStackTrace();
+                if (progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
+                System.out.println("failed Blob " + exception.getMessage());
+            }
+        });
+
     }
 
     private void inserAttachments(final JSONArray records) {
@@ -619,10 +676,10 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         //Get the external storage directory and make a new directory for our attachments
         new Thread(new Runnable() {
             public void run() {
-                if (!progressDialog.isShowing()) {
+               /* if (!progressDialog.isShowing()) {
                     progressDialog.show();
                     progressDialog.setMessage("Downloading Attachments...");
-                }
+                }*/
                 String path = Environment.getExternalStorageDirectory() + "/" + "SalesForce/";
                 File dir = new File(path);
                 if (!dir.exists()) {
@@ -638,19 +695,21 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
 
                     //Loop through our attachment records
                     for (int i = 0; i < records.length(); i++) {
-                        JSONObject jsonObject = records.getJSONObject(i).getJSONObject("ContentDocument");
+                       /* JSONObject jsonObject = records.getJSONObject(i).getJSONObject("ContentDocument");
                         String strTitle = jsonObject.getString("Title");
-                        String fileType = jsonObject.getString("FileType");
-                        String linkedEntityId = records.getJSONObject(i).getString("LinkedEntityId");
-                        JSONObject contentDocument = records.getJSONObject(i).getJSONObject("ContentDocument");
-                        JSONObject attributes = contentDocument.getJSONObject("attributes");
-                        String url = attributes.getString("url");
+                        String fileType = jsonObject.getString("FileType");*/
+                        String linkedEntityId = records.getJSONObject(i).getString("Id");
+                        //JSONObject contentDocument = records.getJSONObject(i).getJSONObject("ContentDocument");
+                        JSONObject attributes = records.getJSONObject(i).getJSONObject("attributes");
+                        String url =  records.getJSONObject(i).getString("VersionData").toString();
 
-                        System.out.println("inside download loop title is " + strTitle + "   filetype is " + fileType + "   liked entity id is " + linkedEntityId);
+                        //System.out.println("inside download loop title is " + strTitle + "   filetype is " + fileType + "   liked entity id is " + linkedEntityId);
 
                         //String attUrl = client.getClientInfo().resolveUrl(records.getJSONObject(i).getString("Body")).toString();
                         // String attUrl = client.getClientInfo().resolveUrl("/servlet/servlet.FileDownload?file=" + linkedEntityId).toString();
-                        String attUrl = client.getClientInfo().resolveUrl(url).toString()+"/"+linkedEntityId; /*+ linkedEntityId).toString()*/
+                        //String attUrl = client.getClientInfo().resolveUrl(url).toString()+"/"+linkedEntityId; /*+ linkedEntityId).toString()*/
+                        String attUrl = client.getClientInfo().resolveUrl(url).toString(); /*+ linkedEntityId).toString()*/
+                        //String attUrl = client.getClientInfo().resolveUrl("/services/data/v40.0/sobjects/ContentVersion/"+linkedEntityId+"/VersionData").toString(); /*+ linkedEntityId).toString()*/
                         ;
 
                         //Create a new HttpClient
@@ -680,7 +739,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                         if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
 
                             //Create a new File Output Stream pointing to the directory we just created
-                            FileOutputStream fos = new FileOutputStream(new File(path + linkedEntityId.trim() + "." + fileType.toLowerCase().trim()));
+                            FileOutputStream fos = new FileOutputStream(new File(path + linkedEntityId.trim() /*+ "." + fileType.toLowerCase().trim()*/));
 
                             //Get the entity from our response
                             HttpEntity entity = response.getEntity();

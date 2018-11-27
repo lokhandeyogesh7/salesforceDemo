@@ -27,9 +27,9 @@ public class VisitReportLoader extends AsyncTaskLoader<List<VisitReportObject>> 
     public static final String VISITREPORT_SOUP = "visitreport";
     public static final Integer LIMIT = 10000;
     public static final String LOAD_COMPLETE_INTENT_ACTION = "com.salesforce.samples.smartsyncexplorer.loaders.LIST_LOAD_COMPLETE";
-    private static final String TAG = "ProductListLoader";
-    public static final String SYNC_DOWN_NAME = "syncDownProducts";
-    public static final String SYNC_UP_NAME = "syncUpProducts";
+    private static final String TAG = "VrListtLoader";
+    public static final String SYNC_DOWN_NAME = "syncDownVr";
+    public static final String SYNC_UP_NAME = "syncUpVr";
 
     private SmartStore smartStore;
     private SyncManager syncMgr;

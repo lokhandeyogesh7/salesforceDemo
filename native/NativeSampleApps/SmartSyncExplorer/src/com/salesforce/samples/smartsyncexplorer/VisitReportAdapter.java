@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
 import android.widget.Filterable;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -19,7 +20,8 @@ public class VisitReportAdapter extends RecyclerView.Adapter<VisitReportAdapter.
     private static ProductListAdapter.ClickListener clickListener;
 
     public class MyViewHolder extends RecyclerView.ViewHolder implements VisitReportAdapter.ClickListener, View.OnClickListener, View.OnLongClickListener {
-        public TextView tvVrExpenses,tvVrName,tvVrSubject,tvVrPlan,tvVrStatus;
+        public TextView tvVrExpenses, tvVrName, tvVrSubject, tvVrPlan, tvVrStatus;
+        ImageView local;
 
         public MyViewHolder(View view) {
             super(view);
@@ -30,6 +32,7 @@ public class VisitReportAdapter extends RecyclerView.Adapter<VisitReportAdapter.
             tvVrSubject = view.findViewById(R.id.tvVrSubject);
             tvVrPlan = view.findViewById(R.id.tvVrPlan);
             tvVrStatus = view.findViewById(R.id.tvVrStatus);
+            local = view.findViewById(R.id.ivLocal);
         }
 
         @Override
@@ -74,12 +77,18 @@ public class VisitReportAdapter extends RecyclerView.Adapter<VisitReportAdapter.
     @Override
     public void onBindViewHolder(VisitReportAdapter.MyViewHolder holder, int position) {
         VisitReportObject movie = productlistFilter.get(position);
-        System.out.println("list is binded "+movie.getName());
-        holder.tvVrName.setText("Visit Report ID : "+movie.getName());
-        holder.tvVrExpenses.setText("Expenses : "+movie.getvRExpenses());
-        holder.tvVrPlan.setText("Plan : "+movie.getvRRelatedPlan());
-        holder.tvVrStatus.setText("Status : "+movie.getvRStatus());
-        holder.tvVrSubject.setText("Subject : "+movie.getvRSubject());
+        System.out.println("list is binded " + movie.getName());
+        System.out.println("list is locally or not  " + movie.isLocallyCreated());
+        if (movie.isLocallyCreated()) {
+            holder.local.setVisibility(View.VISIBLE);
+        }else {
+            holder.local.setVisibility(View.GONE);
+        }
+        holder.tvVrName.setText("Visit Report ID : " + movie.getName());
+        holder.tvVrExpenses.setText("Expenses : " + movie.getvRExpenses());
+        holder.tvVrPlan.setText("Plan : " + movie.getvRRelatedPlan());
+        holder.tvVrStatus.setText("Status : " + movie.getvRStatus());
+        holder.tvVrSubject.setText("Subject : " + movie.getvRSubject());
     }
 
     @Override
@@ -97,7 +106,7 @@ public class VisitReportAdapter extends RecyclerView.Adapter<VisitReportAdapter.
             @Override
             protected FilterResults performFiltering(CharSequence charSequence) {
                 String charString = charSequence.toString();
-                System.out.println("performFiltering "+charString);
+                System.out.println("performFiltering " + charString);
                 if (charString.isEmpty()) {
                     productlistFilter = moviesList;
                 } else {
@@ -111,7 +120,7 @@ public class VisitReportAdapter extends RecyclerView.Adapter<VisitReportAdapter.
                     }
 
                     productlistFilter = filteredList;
-                    System.out.println("performFiltering "+productlistFilter);
+                    System.out.println("performFiltering " + productlistFilter);
                 }
 
                 FilterResults filterResults = new FilterResults();
@@ -123,7 +132,7 @@ public class VisitReportAdapter extends RecyclerView.Adapter<VisitReportAdapter.
             protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
                 //noinspection unchecked
                 productlistFilter = (List<VisitReportObject>) filterResults.values;
-                System.out.println(":= publishResults visitreport>> "+productlistFilter);
+                System.out.println(":= publishResults visitreport>> " + productlistFilter);
                 notifyDataSetChanged();
             }
         };
@@ -132,6 +141,7 @@ public class VisitReportAdapter extends RecyclerView.Adapter<VisitReportAdapter.
 
     public interface ClickListener {
         void onItemClick(int position, View v);
+
         void onItemLongClick(int position, View v);
     }
 }

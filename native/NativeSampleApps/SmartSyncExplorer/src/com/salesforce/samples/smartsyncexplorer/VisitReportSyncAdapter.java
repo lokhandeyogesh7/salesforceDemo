@@ -10,6 +10,7 @@ import android.os.Bundle;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.samples.VisitReportLoader;
 
 public class VisitReportSyncAdapter extends AbstractThreadedSyncAdapter {
 
@@ -38,7 +39,7 @@ public class VisitReportSyncAdapter extends AbstractThreadedSyncAdapter {
         }
         if (account != null) {
             final UserAccount user = sdkManager.getUserAccountManager().buildUserAccount(account);
-            final ProductListLoader contactLoader = new ProductListLoader(getContext(), user);
+            final VisitReportLoader contactLoader = new VisitReportLoader(getContext(), user);
             if (syncDownOnly) {
                 contactLoader.syncDown();
             } else {

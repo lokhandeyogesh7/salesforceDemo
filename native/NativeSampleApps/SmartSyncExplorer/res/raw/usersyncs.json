@@ -13,6 +13,20 @@
       "soupName": "contacts",
       "target": {"createFieldlist":["FirstName", "LastName", "Title", "MobilePhone", "Email", "Department", "HomePhone"]},
       "options": {"fieldlist":["Id", "FirstName", "LastName", "Title", "MobilePhone", "Email", "Department", "HomePhone"], "mergeMode":"LEAVE_IF_CHANGED"}
+    },
+    {
+      "syncName": "syncDownVr",
+      "syncType": "syncDown",
+      "soupName": "visitreport",
+      "target": {"type":"soql", "query":"SELECT name,status__c,expenses__c,subject__c,related_plan__c,Description__c FROM visit_report__c LIMIT 10000"},
+      "options": {"mergeMode":"OVERWRITE"}
+    },
+    {
+      "syncName": "syncUpVr",
+      "syncType": "syncUp",
+      "soupName": "visitreport",
+      "target": {"createFieldlist":["name", "status__c", "expenses__c", "subject__c", "related_plan__c", "Description__c"]},
+      "options": {"fieldlist":["Id", "name", "status__c", "expenses__c", "subject__c", "related_plan__c", "Description__c"], "mergeMode":"LEAVE_IF_CHANGED"}
     }
   ]
 }

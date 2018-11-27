@@ -154,7 +154,32 @@
             android:theme="@style/SalesforceSDK.ActionBarTheme" />
         <activity
             android:name=".AddVisitActivity"
-            android:theme="@style/SalesforceSDK.ActionBarTheme" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme" >
+        </activity>
+
+        <!-- VR sync service -->
+        <service
+            android:name=".VisitSyncService"
+            android:exported="true"
+            android:process=":sync">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.content.SyncAdapter"
+                android:resource="@xml/visit_report_sync_adapter" />
+        </service>
+
+        <!-- VR data provider -->
+        <provider
+            android:name=".VisitReportProvider"
+            android:authorities="com.salesforce.samples.smartsyncexplorer.visitreportsyncadapter"
+            android:enabled="true"
+            android:exported="true"
+            android:label="Sync Visit Reports"
+            android:syncable="true" />
+
     </application>
 
 </manifest>

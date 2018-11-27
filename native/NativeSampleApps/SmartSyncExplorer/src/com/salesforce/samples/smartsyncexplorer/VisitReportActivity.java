@@ -48,8 +48,8 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
     private AtomicBoolean isRegistered;
     private static final int VISIT_LOADER_ID = 1;
     private VisitReportLoader visitReportLoader;
-    private static final String SYNC_CONTENT_AUTHORITY = "com.salesforce.samples.smartsyncexplorer.visistreportsyncadapter";
-    private static final long SYNC_FREQUENCY_ONE_HOUR = 1 * 60 * 60;
+    private static final String SYNC_CONTENT_AUTHORITY = "com.salesforce.samples.smartsyncexplorer.visitreportsyncadapter";
+    private static final long SYNC_FREQUENCY_ONE_HOUR = 1 * 60;
     SmartSyncSDKManager sdkManager;
     private SmartStore smartStore;
     RecyclerView rvVisitReport;
@@ -81,15 +81,21 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
                     new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
         }
         isRegistered.set(true);
+
+        // Setup periodic sync
+        setupPeriodicSync();
+        // Sync now
+        requestSync(true /* sync down only */);
+
         callVisitReportApi(client);
     }
 
-    private void callVisitReportApi(RestClient client) {
+    private void callVisitReportApi(final RestClient client) {
         RestRequest restRequest =
                 null;
         try {
             restRequest = RestRequest.getRequestForQuery(
-                    getString(R.string.api_version), "SELECT name,status__c,expenses__c,subject__c,related_plan__c FROM visit_report__c");
+                    getString(R.string.api_version), "SELECT name,status__c,expenses__c,subject__c,related_plan__c,Description__c FROM visit_report__c");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -115,6 +121,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
                         rvVisitReport.setLayoutManager(mLayoutManager);
                         rvVisitReport.setAdapter(mAdapter);
 
+                        getAllPlansAndSave(client);
 
                         mAdapter.setOnItemClickListener(new VisitReportAdapter.ClickListener() {
                             @Override
@@ -168,10 +175,59 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
                 });
             }
         });
-        // Setup periodic sync
-        setupPeriodicSync();
-        // Sync now
-        requestSync(true /* sync down only */);
+
+    }
+
+    private void getAllPlansAndSave(RestClient client) {
+        RestRequest restRequest =
+                null;
+        try {
+            restRequest = RestRequest.getRequestForQuery(
+                    getString(R.string.api_version), "SELECT name FROM plan__c");
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+
+        client.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
+            @Override
+            public void onSuccess(RestRequest request, RestResponse response) {
+                System.out.println("success visit plans request" + request);
+                System.out.println("success visit plans" + response);
+                try {
+                    smartStore.clearSoup("plans");
+                    insertPlans(response.asJSONObject().getJSONArray("records"));
+                } catch (JSONException | IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onError(Exception exception) {
+                exception.printStackTrace();
+                System.out.println("failed " + exception.getMessage());
+
+            }
+        });
+    }
+
+    private void insertPlans(JSONArray records) {
+        try {
+            if (records != null) {
+                for (int i = 0; i < records.length(); i++) {
+                    if (records.get(i) != null) {
+                        try {
+                            smartStore.upsert("plans", records.getJSONObject(i));
+                        } catch (JSONException exc) {
+                            Log.e(TAG, "Error occurred while attempting to insert account. "
+                                    + "Please verify validity of JSON data set.");
+                        }
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Error occurred while attempting to insert accounts. "
+                    + "Please verify validity of JSON data set.");
+        }
     }
 
     private void insertVisitReports(JSONArray records) {
@@ -269,7 +325,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
     private void requestSync(boolean syncDownOnly) {
         Account account = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentAccount();
         Bundle extras = new Bundle();
-        extras.putBoolean(ContactSyncAdapter.SYNC_DOWN_ONLY, syncDownOnly);
+        extras.putBoolean(VisitReportSyncAdapter.SYNC_DOWN_ONLY, syncDownOnly);
         ContentResolver.requestSync(account, SYNC_CONTENT_AUTHORITY, extras);
     }
 
@@ -285,7 +341,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
             return true;
         } else if (id == R.id.action_add) {
             System.out.println("add new ");
-            startActivity(new Intent(this,AddVisitActivity.class));
+            startActivity(new Intent(this, AddVisitActivity.class));
         } else {
             onBackPressed();
         }

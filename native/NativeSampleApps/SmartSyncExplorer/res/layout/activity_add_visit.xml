@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".AddVisitActivity">
 
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
@@ -37,11 +38,12 @@
                     android:text="*Related Plan"
                     android:textAllCaps="false" />
 
-                <EditText
+                <com.toptoche.searchablespinnerlibrary.SearchableSpinner
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
                     android:id="@+id/etPlan"
+                    app:hintText="Select Plan"
+                    android:spinnerMode="dropdown"
                     android:background="@android:drawable/edit_text"
                     android:drawableEnd="@android:drawable/ic_menu_search" />
 
@@ -55,7 +57,7 @@
                 <Spinner
                     android:id="@+id/spStatus"
                     android:layout_width="match_parent"
-                    android:background="@android:drawable/edit_text"
+                    android:spinnerMode="dropdown"
                     android:layout_height="wrap_content" />
 
                 <TextView
@@ -102,6 +104,7 @@
                     android:layout_height="wrap_content"
                     android:layout_margin="5dp"
                     android:id="@+id/etSubject"
+                    android:singleLine="true"
                     android:background="@android:drawable/edit_text" />
 
                 <TextView

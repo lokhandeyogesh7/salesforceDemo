@@ -21,6 +21,7 @@
         android:layout_weight="5"
         android:textAllCaps="false"
         android:textSize="16sp"
+        android:background="@drawable/button_selector"
         android:textColor="@android:color/secondary_text_light"
         android:textStyle="bold"
         android:text="Details" />
@@ -34,6 +35,7 @@
         android:textSize="16sp"
         android:textColor="@android:color/secondary_text_light"
         android:textStyle="bold"
+        android:background="@drawable/button_selector"
         style="@style/Base.TextAppearance.AppCompat.Widget.Button.Borderless.Colored"
         android:text="Attachments" />
 
@@ -56,6 +58,7 @@
         android:background="@color/record_campaign"
         android:gravity="center"
         android:padding="10dp"
+        android:visibility="gone"
         android:text="Attachments : "
         android:textSize="16sp"
         android:textColor="@android:color/holo_blue_dark"

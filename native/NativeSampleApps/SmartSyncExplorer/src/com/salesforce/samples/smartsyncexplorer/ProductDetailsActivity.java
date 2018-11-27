@@ -70,6 +70,9 @@ public class ProductDetailsActivity extends SalesforceActivity {
         getActionBar().setTitle("Product Details");
         getActionBar().setDisplayHomeAsUpEnabled(true);
 
+        btnDetails.setSelected(true);
+        btnAttachments.setSelected(false);
+
 
         btnDetails.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -116,6 +119,10 @@ public class ProductDetailsActivity extends SalesforceActivity {
         rlDetails.setVisibility(View.GONE);
         rvDetails.setVisibility(View.VISIBLE);
         tvNodata.setVisibility(View.GONE);
+
+        btnDetails.setSelected(false);
+        btnAttachments.setSelected(true);
+
         final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(
                 "attachments", AttachmentObject.ATTACHMENT_ID, productCode, null, null, 10000);
         JSONArray results = null;
@@ -177,6 +184,9 @@ public class ProductDetailsActivity extends SalesforceActivity {
         rlDetails.setVisibility(View.VISIBLE);
         rvDetails.setVisibility(View.GONE);
         tvNodata.setVisibility(View.GONE);
+
+        btnDetails.setSelected(true);
+        btnAttachments.setSelected(false);
 
         ProductObject productObject;
         try {

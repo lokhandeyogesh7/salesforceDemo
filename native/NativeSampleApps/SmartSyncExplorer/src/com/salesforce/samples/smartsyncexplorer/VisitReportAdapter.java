@@ -11,21 +11,25 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AttachmentAdapter extends RecyclerView.Adapter<AttachmentAdapter.MyViewHolder> implements Filterable {
+public class VisitReportAdapter extends RecyclerView.Adapter<VisitReportAdapter.MyViewHolder> implements Filterable {
 
-    private List<AttachmentObject> moviesList;
-    private List<AttachmentObject> productlistFilter;
+    private List<VisitReportObject> moviesList;
+    private List<VisitReportObject> productlistFilter;
 
-    private static ClickListener clickListener;
+    private static ProductListAdapter.ClickListener clickListener;
 
-    public class MyViewHolder extends RecyclerView.ViewHolder implements ClickListener, View.OnClickListener, View.OnLongClickListener {
-        public TextView title;
+    public class MyViewHolder extends RecyclerView.ViewHolder implements VisitReportAdapter.ClickListener, View.OnClickListener, View.OnLongClickListener {
+        public TextView tvVrExpenses,tvVrName,tvVrSubject,tvVrPlan,tvVrStatus;
 
         public MyViewHolder(View view) {
             super(view);
             itemView.setOnClickListener(this);
             itemView.setOnLongClickListener(this);
-            title = view.findViewById(R.id.tvName);
+            tvVrName = view.findViewById(R.id.tvVrName);
+            tvVrExpenses = view.findViewById(R.id.tvVrExpenses);
+            tvVrSubject = view.findViewById(R.id.tvVrSubject);
+            tvVrPlan = view.findViewById(R.id.tvVrPlan);
+            tvVrStatus = view.findViewById(R.id.tvVrStatus);
         }
 
         @Override
@@ -50,29 +54,32 @@ public class AttachmentAdapter extends RecyclerView.Adapter<AttachmentAdapter.My
         }
     }
 
-    public void setOnItemClickListener(ClickListener clickListener) {
-        AttachmentAdapter.clickListener = clickListener;
+    public void setOnItemClickListener(VisitReportAdapter.ClickListener clickListener) {
+        clickListener = clickListener;
     }
 
-    public AttachmentAdapter(List<AttachmentObject> moviesList) {
+    public VisitReportAdapter(List<VisitReportObject> moviesList) {
         this.moviesList = moviesList;
         this.productlistFilter = moviesList;
     }
 
     @Override
-    public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public VisitReportAdapter.MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View itemView = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.row_product, parent, false);
+                .inflate(R.layout.row_visit_report, parent, false);
 
-        return new MyViewHolder(itemView);
+        return new VisitReportAdapter.MyViewHolder(itemView);
     }
 
     @Override
-    public void onBindViewHolder(MyViewHolder holder, int position) {
-        AttachmentObject movie = productlistFilter.get(position);
-        System.out.println("list is binded "+movie.getAttachmentTitle());
-        String fileName = movie.getAttachmentTitle()+"."+movie.getContentDocumentfileType().toLowerCase();
-        holder.title.setText(fileName);
+    public void onBindViewHolder(VisitReportAdapter.MyViewHolder holder, int position) {
+        VisitReportObject movie = productlistFilter.get(position);
+        System.out.println("list is binded "+movie.getName());
+        holder.tvVrName.setText("Visit Report ID : "+movie.getName());
+        holder.tvVrExpenses.setText("Expenses : "+movie.getvRExpenses());
+        holder.tvVrPlan.setText("Plan : "+movie.getvRRelatedPlan());
+        holder.tvVrStatus.setText("Status : "+movie.getvRStatus());
+        holder.tvVrSubject.setText("Subject : "+movie.getvRSubject());
     }
 
     @Override
@@ -80,7 +87,7 @@ public class AttachmentAdapter extends RecyclerView.Adapter<AttachmentAdapter.My
         return productlistFilter.size();
     }
 
-    public List<AttachmentObject> getMoviesList() {
+    public List<VisitReportObject> getMoviesList() {
         return moviesList;
     }
 
@@ -94,8 +101,8 @@ public class AttachmentAdapter extends RecyclerView.Adapter<AttachmentAdapter.My
                 if (charString.isEmpty()) {
                     productlistFilter = moviesList;
                 } else {
-                    List<AttachmentObject> filteredList = new ArrayList<>();
-                    for (AttachmentObject row : moviesList) {
+                    List<VisitReportObject> filteredList = new ArrayList<>();
+                    for (VisitReportObject row : moviesList) {
                         // name match condition. this might differ depending on your requirement
                         // here we are looking for name or phone number match
                         if (row.getName().toLowerCase().contains(charString.toLowerCase())) {
@@ -115,8 +122,8 @@ public class AttachmentAdapter extends RecyclerView.Adapter<AttachmentAdapter.My
             @Override
             protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
                 //noinspection unchecked
-                productlistFilter = (List<AttachmentObject>) filterResults.values;
-                System.out.println(":= publishResults >> "+productlistFilter);
+                productlistFilter = (List<VisitReportObject>) filterResults.values;
+                System.out.println(":= publishResults visitreport>> "+productlistFilter);
                 notifyDataSetChanged();
             }
         };
@@ -127,6 +134,4 @@ public class AttachmentAdapter extends RecyclerView.Adapter<AttachmentAdapter.My
         void onItemClick(int position, View v);
         void onItemLongClick(int position, View v);
     }
-
-
 }

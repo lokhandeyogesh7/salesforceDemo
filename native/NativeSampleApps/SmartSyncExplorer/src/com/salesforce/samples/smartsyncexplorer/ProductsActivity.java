@@ -19,7 +19,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -32,7 +31,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SearchView;
-import android.widget.Toast;
 
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -51,11 +49,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
@@ -162,13 +158,14 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                        /* for (int i = 0; i < productObjects.size(); i++) {
                             setUpPricebookSoup(client, productObjects.get(i).getProductCode());
                         }*/
+                        getAttachments(client);
 
-                        btnGetAttachments.setOnClickListener(new View.OnClickListener() {
+                        /*btnGetAttachments.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
                                 getAttachments(client);
                             }
-                        });
+                        });*/
 
                         mAdapter.setOnItemClickListener(new ProductListAdapter.ClickListener() {
                             @Override
@@ -237,13 +234,21 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         for (int j = 0; j < productObjects.size(); j++) {
             progressDialog.show();
             progressDialog.setMessage("Loading Attachments...");
-            setAttachmentSoup(client, productObjects.get(j).getProductId());
+            System.out.println("is last before" + j + ">>> " + (productObjects.size() - 1));
+            //setAttachmentSoup(client, productObjects.get(j).getProductId(), true);
+            if (j == productObjects.size() - 1) {
+                System.out.println("is last " + j + ">>> " + (productObjects.size() - 1));
+                setAttachmentSoup(client, productObjects.get(j).getProductId(), true);
+                //downloadAttchmets(client);
+            } else {
+                setAttachmentSoup(client, productObjects.get(j).getProductId(), false);
+            }
         }
         progressDialog.dismiss();
 
     }
 
-    private void setAttachmentSoup(final RestClient client, final String productCode) {
+    private void setAttachmentSoup(final RestClient client, final String productCode, final boolean isLast) {
 
         RestRequest restRequest =
                 null;
@@ -269,14 +274,19 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                                     btnDownloadAttachments.setEnabled(true);
                                     final JSONArray jsonArray = response.asJSONObject().getJSONArray("records");
                                     inserAttachments(jsonArray);
-                                    btnDownloadAttachments.setOnClickListener(new View.OnClickListener() {
+                                    System.out.println("is last "+isLast);
+                                    downloadAttchmets(client);
+                                    if (isLast) {
+                                        System.out.println("is last inside loop "+isLast);
+                                    }
+                                   /* btnDownloadAttachments.setOnClickListener(new View.OnClickListener() {
                                         @Override
                                         public void onClick(View view) {
                                             progressDialog.setMessage("Download in progress..");
                                             progressDialog.show();
                                             downloadAttchmets(client);
                                         }
-                                    });
+                                    });*/
                                 } catch (JSONException | IOException e) {
                                     e.printStackTrace();
                                 }
@@ -328,6 +338,8 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
             /*if (attachmentObjects.isEmpty()){
                 Toast.makeText(ProductsActivity.this,"Please Click on Get Details",Toast.LENGTH_LONG).show();
             }*/
+
+            System.out.println("attachmentObjects.size() "+attachmentObjects.size()+">>> "+productObjects.get(i).getProductName());
 
             for (int j = 0; j < attachmentObjects.size(); j++) {
                 String cdID = attachmentObjects.get(j).getContentDocumentId();

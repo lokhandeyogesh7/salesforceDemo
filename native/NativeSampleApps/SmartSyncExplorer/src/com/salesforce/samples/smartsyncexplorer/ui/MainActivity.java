@@ -65,6 +65,7 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.ui.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.ProductsActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
+import com.salesforce.samples.smartsyncexplorer.VisitReportActivity;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 import com.salesforce.samples.smartsyncexplorer.sync.ContactSyncAdapter;
@@ -280,6 +281,9 @@ public class MainActivity extends SalesforceListActivity implements
             case R.id.action_products:
                 startActivity(new Intent(this, ProductsActivity.class));
                 return true;
+            case R.id.action_visit_report:
+                startActivity(new Intent(this, VisitReportActivity.class));
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -414,7 +418,11 @@ public class MainActivity extends SalesforceListActivity implements
                     final TextView objType = (TextView) convertView.findViewById(R.id.obj_type);
                     final TextView objImage = (TextView) convertView.findViewById(R.id.obj_image);
                     if (objName != null) {
-                        objName.setText(sObject.getName());
+                        if (sObject.getName().contains("null")) {
+                            objName.setText(sObject.getName().replace("null",""));
+                        }else {
+                            objName.setText(sObject.getName());
+                        }
                     }
                     if (objType != null) {
                         objType.setText(sObject.getTitle());

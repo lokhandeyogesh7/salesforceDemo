@@ -58,6 +58,21 @@
         { "path": "__locally_deleted__", "type": "string"},
         { "path": "__sync_id__", "type": "integer"}
       ]
+    },
+    {
+      "soupName": "visitreport",
+      "indexes": [
+        { "path": "Name", "type": "string"},
+        { "path": "Status__c", "type": "string"},
+        { "path": "Expenses__c", "type": "string"},
+        { "path": "Subject__c", "type": "string"},
+        { "path": "Related_Plan__c", "type": "string"},
+        { "path": "__local__", "type": "string"},
+        { "path": "__locally_created__", "type": "string"},
+        { "path": "__locally_updated__", "type": "string"},
+        { "path": "__locally_deleted__", "type": "string"},
+        { "path": "__sync_id__", "type": "integer"}
+      ]
     }
   ]
 }

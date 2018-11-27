@@ -146,8 +146,15 @@
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
         </activity>
-        <activity android:name=".ProductDetailsActivity"
-            android:theme="@style/SalesforceSDK.ActionBarTheme"/>
+        <activity
+            android:name=".ProductDetailsActivity"
+            android:theme="@style/SalesforceSDK.ActionBarTheme" />
+        <activity
+            android:name=".VisitReportActivity"
+            android:theme="@style/SalesforceSDK.ActionBarTheme" />
+        <activity
+            android:name=".AddVisitActivity"
+            android:theme="@style/SalesforceSDK.ActionBarTheme" />
     </application>
 
 </manifest>

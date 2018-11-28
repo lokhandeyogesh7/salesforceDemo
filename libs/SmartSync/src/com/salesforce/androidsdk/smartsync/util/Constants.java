@@ -59,6 +59,7 @@ public class Constants {
 
 
     public static final String PRODUCTS = "Products";
+    public static final String VISIT_REPORT = "visitreport";
 
     /**
      * Salesforce object types.

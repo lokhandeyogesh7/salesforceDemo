@@ -13,7 +13,6 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
-import com.salesforce.samples.smartsyncexplorer.ProductObject;
 import com.salesforce.samples.smartsyncexplorer.VisitReportObject;
 
 import org.json.JSONArray;
@@ -79,8 +78,9 @@ public class VisitReportLoader extends AsyncTaskLoader<List<VisitReportObject>> 
      * Pushes local changes up to the server.
      */
     public synchronized void syncUp() {
+        System.out.println("sunc up on visit report loader");
         try {
-            syncMgr.reSync(SYNC_UP_NAME /* see usersyncs.json */, new SyncManager.SyncUpdateCallback() {
+            syncMgr.reSync(SYNC_UP_NAME  /*see usersyncs.json*/ , new SyncManager.SyncUpdateCallback() {
 
                 @Override
                 public void onUpdate(SyncState sync) {
@@ -100,6 +100,7 @@ public class VisitReportLoader extends AsyncTaskLoader<List<VisitReportObject>> 
      * Pulls the latest records from the server.
      */
     public synchronized void syncDown() {
+        System.out.println("sunc down on visit report loader");
         try {
             syncMgr.reSync(SYNC_DOWN_NAME /* see usersyncs.json */, new SyncManager.SyncUpdateCallback() {
 
@@ -128,5 +129,44 @@ public class VisitReportLoader extends AsyncTaskLoader<List<VisitReportObject>> 
         final Intent intent = new Intent(LOAD_COMPLETE_INTENT_ACTION);
         SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
     }
+
+
+
+
+    /**
+     * Pushes local changes up to the server.
+     */
+   /* public synchronized void syncUp() {
+
+        SyncUpTarget target = new SyncUpTarget();
+
+        SyncOptions options = SyncOptions.optionsForSyncUp(loadInBackground(), SyncState.MergeMode.OVERWRITE);
+        try {
+            syncUp(target, options, "visitreport", new SyncManager.SyncUpdateCallback() {
+
+                @Override
+                public void onUpdate(SyncState sync) {
+                    if (SyncState.Status.DONE.equals(sync.getStatus())) {
+                        System.out.println("\"Case syncUp done\"");
+                        // syncDownOfflineOrder();
+
+                    } else if (SyncState.Status.FAILED.equals(sync.getStatus())) {
+                        System.out.println("\"Case syncUp Failed\"");
+
+                    } else if (SyncState.Status.RUNNING.equals(sync.getStatus())) {
+                        System.out.println("\"Case syncUp Running\"");
+
+                    } else if (SyncState.Status.NEW.equals(sync.getStatus())) {
+                        System.out.println("\"Case syncUp NEW\"");
+                    }
+                }
+            });
+        } catch (JSONException e) {
+            System.out.println("\"Case syncUp exception \""+e);
+        } catch (SyncManager.SmartSyncException e) {
+            System.out.println("\"Case syncUp smart sync exception \""+e);
+        }
+    }*/
+
 }
 

@@ -58,7 +58,7 @@ public class VisitReportObject extends SalesforceObject {
      */
     public VisitReportObject(JSONObject data) {
         super(data);
-        objectType = Constants.PRODUCTS;
+        objectType = Constants.VISIT_REPORT;
         objectId = data.optString(Constants.ID);
         name = data.optString(V_R_NAME);
         isLocallyCreated = data.optBoolean(SyncTarget.LOCALLY_CREATED);

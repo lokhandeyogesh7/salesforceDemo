@@ -65,6 +65,9 @@ public class ContactSyncAdapter extends AbstractThreadedSyncAdapter {
         final boolean syncDownOnly = extras.getBoolean(SYNC_DOWN_ONLY, false);
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         final UserAccountManager accManager = sdkManager.getUserAccountManager();
+
+        System.out.println("contact sync adapter "+syncDownOnly);
+
         if (sdkManager.isLoggingOut() || accManager.getAuthenticatedUsers() == null) {
             return;
         }

@@ -50,11 +50,6 @@ import org.json.JSONException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A simple AsyncTaskLoader to load a list of Salesforce contacts.
- *
- * @author bhariharan
- */
 public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 
 	public static final String CONTACT_SOUP = "contacts";

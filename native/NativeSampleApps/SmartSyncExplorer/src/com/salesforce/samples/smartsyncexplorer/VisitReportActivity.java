@@ -26,6 +26,10 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
 import com.salesforce.samples.VisitReportLoader;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
@@ -36,7 +40,10 @@ import org.json.JSONException;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -78,7 +85,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
         getLoaderManager().initLoader(VISIT_LOADER_ID, null, this);
         if (!isRegistered.get()) {
             registerReceiver(loadCompleteReceiver,
-                    new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
+                    new IntentFilter(VisitReportLoader.LOAD_COMPLETE_INTENT_ACTION));
         }
         isRegistered.set(true);
 
@@ -87,7 +94,32 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
         // Sync now
         requestSync(true /* sync down only */);
 
-        callVisitReportApi(client);
+        //callVisitReportApi(client);
+
+        vrObjects = visitReportLoader.loadInBackground();
+        mAdapter = new VisitReportAdapter(vrObjects);
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+        rvVisitReport.setLayoutManager(mLayoutManager);
+        rvVisitReport.setAdapter(mAdapter);
+
+        getAllPlansAndSave(client);
+
+        mAdapter.setOnItemClickListener(new VisitReportAdapter.ClickListener() {
+            @Override
+            public void onItemClick(int position, View v) {
+                VisitReportObject sObject = vrObjects.get(position);
+                System.out.println("cliked object id is " + sObject.getvRName());
+                Intent intent = new Intent(VisitReportActivity.this, ProductDetailsActivity.class);
+                intent.putExtra("product_code", sObject.getvRName());
+                System.out.println("product code " + sObject.getvRName());
+                startActivity(intent);
+            }
+
+            @Override
+            public void onItemLongClick(int position, View v) {
+
+            }
+        });
     }
 
     private void callVisitReportApi(final RestClient client) {
@@ -183,7 +215,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
                 null;
         try {
             restRequest = RestRequest.getRequestForQuery(
-                    getString(R.string.api_version), "SELECT name FROM plan__c");
+                    getString(R.string.api_version), "SELECT name,id FROM plan__c");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -253,17 +285,19 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
     @Override
     public Loader<List<VisitReportObject>> onCreateLoader(int i, Bundle bundle) {
         visitReportLoader = new VisitReportLoader(this, SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
-        System.out.println("contact list loader " + visitReportLoader.loadInBackground());
+        System.out.println("visit list loader " + visitReportLoader.loadInBackground());
         return visitReportLoader;
     }
 
     @Override
     public void onLoadFinished(Loader<List<VisitReportObject>> loader, List<VisitReportObject> visitReportObjects) {
         refreshList(visitReportObjects);
+        System.out.println("load finished "+visitReportObjects);
     }
 
     @Override
     public void onLoaderReset(Loader<List<VisitReportObject>> loader) {
+        System.out.println("load reset "+loader);
         refreshList(null);
     }
 
@@ -284,7 +318,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
         public void onReceive(Context context, Intent intent) {
             if (intent != null) {
                 final String action = intent.getAction();
-                if (ContactListLoader.LOAD_COMPLETE_INTENT_ACTION.equals(action)) {
+                if (VisitReportLoader.LOAD_COMPLETE_INTENT_ACTION.equals(action)) {
                     refreshList();
                 }
             }
@@ -376,4 +410,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
         });
         return true;
     }
+
+
+
 }

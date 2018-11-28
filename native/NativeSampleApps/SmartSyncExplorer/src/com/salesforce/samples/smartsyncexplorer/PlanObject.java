@@ -12,9 +12,16 @@ public class PlanObject extends SalesforceObject {
 
     public static final String PLAN_NAME = "Name";
 
-    public String getPLAN_NAME() {
+    public  String getPlanName() {
         return sanitizeText(rawData.optString(PLAN_NAME));
     }
+
+    public  String getPlanId() {
+        return sanitizeText(rawData.optString(PLAN_ID));
+    }
+
+    public static final String PLAN_ID = "Id";
+
 
     public boolean isLocallyUpdated() {
         return isLocallyUpdated;
@@ -34,7 +41,7 @@ public class PlanObject extends SalesforceObject {
     public PlanObject(JSONObject data) {
         super(data);
         objectType = "plans";
-        objectId = data.optString(Constants.ID);
+        objectId = data.optString(PLAN_ID);
         name = data.optString(PLAN_NAME);
         isLocallyCreated = data.optBoolean(SyncTarget.LOCALLY_CREATED);
         isLocallyDeleted = data.optBoolean(SyncTarget.LOCALLY_DELETED);

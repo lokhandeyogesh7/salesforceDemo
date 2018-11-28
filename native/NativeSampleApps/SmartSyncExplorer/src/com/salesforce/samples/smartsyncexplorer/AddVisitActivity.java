@@ -1,6 +1,5 @@
 package com.salesforce.samples.smartsyncexplorer;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -14,19 +13,27 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
 import com.salesforce.samples.VisitReportLoader;
-import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
-import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 import com.toptoche.searchablespinnerlibrary.SearchableSpinner;
 
 import org.json.JSONArray;
@@ -34,6 +41,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 public class AddVisitActivity extends SalesforceActivity {
@@ -45,6 +54,8 @@ public class AddVisitActivity extends SalesforceActivity {
     private SmartStore smartStore;
     private SyncManager syncMgr;
     String selectedPlan, selectedStatus;
+    private long accountSyncId = -1;
+    RestClient restClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +80,7 @@ public class AddVisitActivity extends SalesforceActivity {
             results = smartStore.query(querySpec, 0);
             for (int i = 0; i < results.length(); i++) {
                 plans.add(new PlanObject(results.getJSONObject(i)));
-                arrPlans.add(plans.get(i).getPLAN_NAME());
+                arrPlans.add(plans.get(i).getPlanId());
             }
         } catch (JSONException e) {
             Log.e(getLocalClassName(), "JSONException occurred while parsing", e);
@@ -125,6 +136,7 @@ public class AddVisitActivity extends SalesforceActivity {
 
     @Override
     public void onResume(RestClient client) {
+        restClient = client;
         curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         //getLoaderManager().initLoader(CONTACT_DETAIL_LOADER_ID, null, this).forceLoad();
     }
@@ -179,8 +191,18 @@ public class AddVisitActivity extends SalesforceActivity {
                 contact.put(VisitReportObject.V_R_SUBJECT, subject);
                 contact.put(SyncTarget.LOCAL, true);
                 contact.put(SyncTarget.LOCALLY_CREATED, true);
+                contact.put(SyncTarget.LOCALLY_UPDATED, false);
+                contact.put(SyncTarget.LOCALLY_DELETED, false);
                 //if (isCreate) {
                 smartStore.create(VisitReportLoader.VISITREPORT_SOUP, contact);
+                /*JSONObject jsonObject = new JSONObject();
+                jsonObject.put(VisitReportObject.V_R_DESCRIPTION, description);
+                jsonObject.put(VisitReportObject.V_R_EXPENSES, expenses);
+                jsonObject.put(VisitReportObject.V_R_RELATED_PLAN, selectedPlan);
+                jsonObject.put(VisitReportObject.V_R_STATUS, selectedStatus);
+                jsonObject.put(VisitReportObject.V_R_SUBJECT, subject);
+                HashMap yourHashMap = new Gson().fromJson(jsonObject.toString(), HashMap.class);
+                updateServer(yourHashMap);*/
             /*} else {
                 smartStore.upsert(ContactListLoader.CONTACT_SOUP, contact);
             }*/
@@ -189,7 +211,137 @@ public class AddVisitActivity extends SalesforceActivity {
             } catch (JSONException e) {
                 Log.e(getLocalClassName(), "JSONException occurred while parsing", e);
             }
-
         }
     }
+
+
+
+
+
+
+
+   private void updateServer(HashMap<String, Object> fields){
+
+       final RestRequest restRequest;
+       try {
+           restRequest = RestRequest.getRequestForCreate(getString(R.string.api_version), "visit_report__c", fields);
+       } catch (Exception e) {
+           //MainActivity.showError(this, e);
+           e.printStackTrace();
+           return;
+       }
+
+       restClient.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
+           @Override
+           public void onSuccess(RestRequest request, RestResponse result) {
+               System.out.println("result of upsertt is "+result);
+           }
+
+           @Override
+           public void onError(Exception e) {
+               //MainActivity.showError(DetailActivity.this, e);
+               e.printStackTrace();
+           }
+       });
+   }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Pushes local changes up to the server.
+     */
+    public synchronized void syncUp() {
+
+        final SyncUpTarget target = new SyncUpTarget();
+
+        final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(VisitReportObject.V_R_DESCRIPTION, VisitReportObject.V_R_EXPENSES, VisitReportObject.V_R_NAME, VisitReportObject.V_R_RELATED_PLAN, VisitReportObject.V_R_STATUS, VisitReportObject.V_R_SUBJECT), SyncState.MergeMode.OVERWRITE);
+        try {
+            syncMgr.syncUp(target, options, "visitreport", new SyncManager.SyncUpdateCallback() {
+
+                @Override
+                public void onUpdate(SyncState sync) {
+                    if (SyncState.Status.DONE.equals(sync.getStatus())) {
+                        System.out.println("sync done");
+                        syncDownOfflineOrder();
+
+                    } else if (SyncState.Status.FAILED.equals(sync.getStatus())) {
+                        // DebugLog.d("Case syncUp FAILED");
+                        System.out.println("sync failed");
+
+                    } else if (SyncState.Status.RUNNING.equals(sync.getStatus())) {
+                        //DebugLog.d("Case syncUp RUNNING");
+                        System.out.println("sync running");
+
+                    } else if (SyncState.Status.NEW.equals(sync.getStatus())) {
+                        //DebugLog.d("Case syncUp NEW");
+                        System.out.println("sync new");
+                    }
+                }
+            });
+        } catch (JSONException e) {
+            // DebugLog.d("JSONException occurred while parsing"+e);
+            System.out.println("JSONException occurred while parsing" + e);
+        } catch (SyncManager.SmartSyncException e) {
+            System.out.println("JSONException occurred while SmartSyncException" + e);
+        }
+    }
+
+    final IndexSpec[] indexSpecs = {
+            new IndexSpec(VisitReportObject.V_R_DESCRIPTION, SmartStore.Type.string),
+            new IndexSpec(VisitReportObject.V_R_EXPENSES, SmartStore.Type.string),
+            new IndexSpec(VisitReportObject.V_R_NAME, SmartStore.Type.string),
+            new IndexSpec(VisitReportObject.V_R_RELATED_PLAN, SmartStore.Type.string),
+            new IndexSpec(VisitReportObject.V_R_STATUS, SmartStore.Type.string),
+            new IndexSpec(VisitReportObject.V_R_SUBJECT, SmartStore.Type.string),
+            new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string)
+    };
+
+    /**
+     * Pulls the latest records from the server.
+     */
+    public synchronized void syncDownOfflineOrder() {
+
+        smartStore.registerSoup("visitreport", indexSpecs);
+
+        final SyncManager.SyncUpdateCallback callback = new SyncManager.SyncUpdateCallback() {
+
+            @Override
+            public void onUpdate(SyncState sync) {
+                if (SyncState.Status.DONE.equals(sync.getStatus())) {
+                    // fireLoadCompleteIntent();
+                    //DebugLog.d("syncDownOfflineOrder done");
+                }
+            }
+        };
+        try {
+            if (accountSyncId == -1) {
+
+                final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
+
+                final String soqlQuery = SOQLBuilder.getInstanceWithFields(VisitReportObject.V_R_DESCRIPTION, VisitReportObject.V_R_EXPENSES, VisitReportObject.V_R_NAME, VisitReportObject.V_R_RELATED_PLAN, VisitReportObject.V_R_STATUS, VisitReportObject.V_R_SUBJECT).from("visit_report__c").limit(100000).build();
+
+                System.out.println("soQl Query "+soqlQuery);
+
+                final SyncDownTarget target = new SoqlSyncDownTarget(soqlQuery);
+                final SyncState sync = syncMgr.syncDown(target, options, "visitreport", callback);
+                System.out.println("sync is "+sync.asJSON());
+                accountSyncId = sync.getId();
+            } else {
+                syncMgr.reSync(accountSyncId, callback);
+            }
+        } catch (JSONException e) {
+            //DebugLog.e("JSONException occurred while parsing"+e);
+            System.out.println("JSONException occurred while parsing"+e);
+        } catch (SyncManager.SmartSyncException e) {
+            System.out.println("SmartSyncException occurred while attempting to sync down"+e);
+        }
+    }
+
 }

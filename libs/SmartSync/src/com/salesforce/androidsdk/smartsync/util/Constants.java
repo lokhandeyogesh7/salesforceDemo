@@ -41,6 +41,7 @@ public class Constants {
 	public static final String EMPTY_STRING = "";
 	public static final String NULL_STRING = "null";
     public static final String ID = "Id";
+    public static final String VR_ID = "Id";
     public static final String NAME = "Name";
     public static final String LAST_NAME = "LastName";
     public static final String DESCRIPTION = "Description";

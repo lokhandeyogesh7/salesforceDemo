@@ -40,6 +40,7 @@ import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SmartSyncException;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
@@ -106,6 +107,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 * Pushes local changes up to the server.
 	 */
 	public synchronized void syncUp() {
+		System.out.println("contact sync up ");
 		try {
 			syncMgr.reSync(SYNC_UP_NAME /* see usersyncs.json */, new SyncUpdateCallback() {
 
@@ -121,12 +123,14 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 		} catch (SmartSyncException e) {
             Log.e(TAG, "SmartSyncException occurred while attempting to sync up", e);
 		}
+
 	}
 
 	/**
 	 * Pulls the latest records from the server.
 	 */
 	public synchronized void syncDown() {
+		System.out.println("contact sync down ");
 		try {
 			syncMgr.reSync(SYNC_DOWN_NAME /* see usersyncs.json */, new SyncUpdateCallback() {
 

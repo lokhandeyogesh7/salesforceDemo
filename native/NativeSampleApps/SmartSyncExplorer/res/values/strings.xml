@@ -25,4 +25,5 @@
     <string name="delete">Delete</string>
     <string name="undelete">Undelete</string>
     <string name="delete_title">Are you sure?</string>
+    <string name="db_name">sample-db</string>
 </resources>

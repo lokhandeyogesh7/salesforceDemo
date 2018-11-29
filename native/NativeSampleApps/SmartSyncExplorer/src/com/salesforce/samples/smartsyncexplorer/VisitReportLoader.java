@@ -1,4 +1,4 @@
-package com.salesforce.samples;
+package com.salesforce.samples.smartsyncexplorer;
 
 import android.content.AsyncTaskLoader;
 import android.content.Context;
@@ -12,6 +12,8 @@ import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.samples.smartsyncexplorer.VisitReportObject;
 
@@ -19,6 +21,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class VisitReportLoader extends AsyncTaskLoader<List<VisitReportObject>> {
@@ -77,10 +80,10 @@ public class VisitReportLoader extends AsyncTaskLoader<List<VisitReportObject>> 
     /**
      * Pushes local changes up to the server.
      */
-    public synchronized void syncUp() {
+  /*  public synchronized void syncUp() {
         System.out.println("sunc up on visit report loader");
         try {
-            syncMgr.reSync(SYNC_UP_NAME  /*see usersyncs.json*/ , new SyncManager.SyncUpdateCallback() {
+            syncMgr.reSync(SYNC_UP_NAME *//* see usersyncs.json *//*, new SyncManager.SyncUpdateCallback() {
 
                 @Override
                 public void onUpdate(SyncState sync) {
@@ -94,7 +97,7 @@ public class VisitReportLoader extends AsyncTaskLoader<List<VisitReportObject>> 
         } catch (SyncManager.SmartSyncException e) {
             Log.e(TAG, "SmartSyncException occurred while attempting to sync up", e);
         }
-    }
+    }*/
 
     /**
      * Pulls the latest records from the server.
@@ -130,25 +133,50 @@ public class VisitReportLoader extends AsyncTaskLoader<List<VisitReportObject>> 
         SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
     }
 
+    //new
 
-
+   /* public synchronized void syncUp() {
+        final SyncUpTarget target = new SyncUpTarget();
+        final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(VisitReportObject.V_R_SUBJECT,VisitReportObject.V_R_STATUS,
+                VisitReportObject.V_R_RELATED_PLAN,VisitReportObject.V_R_NAME,VisitReportObject.V_R_EXPENSES,
+                VisitReportObject.V_R_DESCRIPTION),SyncState.MergeMode.LEAVE_IF_CHANGED);
+        System.out.println("sync options are "+options);
+        System.out.println("sync target are "+target);
+        try {
+            syncMgr.syncUp(target, options, VisitReportLoader.VISITREPORT_SOUP,
+                    new SyncManager.SyncUpdateCallback() {
+                        @Override
+                        public void onUpdate(SyncState sync) {
+                            System.out.println("onupdate"+sync.getProgress());
+                            if (SyncState.Status.DONE.equals(sync.getStatus())) {
+                                syncDown();
+                            }
+                        }
+                    });
+        } catch (JSONException e) {
+            Log.e(TAG, "JSONException occurred while parsing", e);
+        } catch (SyncManager.SmartSyncException e) {
+            Log.e(TAG, "SmartSyncException occurred while attempting to sync up", e);
+        }
+    }*/
 
     /**
      * Pushes local changes up to the server.
      */
-   /* public synchronized void syncUp() {
+    public synchronized void syncUp() {
 
         SyncUpTarget target = new SyncUpTarget();
 
-        SyncOptions options = SyncOptions.optionsForSyncUp(loadInBackground(), SyncState.MergeMode.OVERWRITE);
+        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(VisitReportObject.V_R_DESCRIPTION,VisitReportObject.V_R_EXPENSES,VisitReportObject.V_R_NAME,VisitReportObject.V_R_RELATED_PLAN,VisitReportObject.V_R_STATUS,VisitReportObject.V_R_SUBJECT), SyncState.MergeMode.OVERWRITE);
         try {
-            syncUp(target, options, "visitreport", new SyncManager.SyncUpdateCallback() {
+            syncMgr.syncUp(target, options, "visitreport", new SyncManager.SyncUpdateCallback() {
 
                 @Override
                 public void onUpdate(SyncState sync) {
                     if (SyncState.Status.DONE.equals(sync.getStatus())) {
                         System.out.println("\"Case syncUp done\"");
                         // syncDownOfflineOrder();
+                        syncDown();
 
                     } else if (SyncState.Status.FAILED.equals(sync.getStatus())) {
                         System.out.println("\"Case syncUp Failed\"");
@@ -166,7 +194,7 @@ public class VisitReportLoader extends AsyncTaskLoader<List<VisitReportObject>> 
         } catch (SyncManager.SmartSyncException e) {
             System.out.println("\"Case syncUp smart sync exception \""+e);
         }
-    }*/
+    }
 
 }
 

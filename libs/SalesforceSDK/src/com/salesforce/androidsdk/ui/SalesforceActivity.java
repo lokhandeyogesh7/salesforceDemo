@@ -84,4 +84,6 @@ public abstract class SalesforceActivity extends Activity implements SalesforceA
 	public void onUserSwitched() {
 		delegate.onResume(true);
 	}
+
+
 }

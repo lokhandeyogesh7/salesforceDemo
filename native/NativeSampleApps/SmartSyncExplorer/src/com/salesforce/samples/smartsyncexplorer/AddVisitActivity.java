@@ -1,5 +1,6 @@
 package com.salesforce.samples.smartsyncexplorer;
 
+import android.arch.persistence.room.Room;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -33,7 +34,6 @@ import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
-import com.salesforce.samples.VisitReportLoader;
 import com.toptoche.searchablespinnerlibrary.SearchableSpinner;
 
 import org.json.JSONArray;
@@ -56,6 +56,8 @@ public class AddVisitActivity extends SalesforceActivity {
     String selectedPlan, selectedStatus;
     private long accountSyncId = -1;
     RestClient restClient;
+    SampleDatabase sampleDatabase;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +68,9 @@ public class AddVisitActivity extends SalesforceActivity {
         etSubject = findViewById(R.id.etSubject);
         etDescription = findViewById(R.id.etDescription);
         spStatus = findViewById(R.id.spStatus);
+
+        sampleDatabase = Room.databaseBuilder(getApplicationContext(),
+                SampleDatabase.class, getString(R.string.db_name)).allowMainThreadQueries().build();
 
         SmartSyncSDKManager sdkManager = SmartSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore(sdkManager.getUserAccountManager().getCurrentUser());
@@ -142,6 +147,12 @@ public class AddVisitActivity extends SalesforceActivity {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
         final MenuInflater inflater = getMenuInflater();
@@ -179,7 +190,7 @@ public class AddVisitActivity extends SalesforceActivity {
             JSONObject contact;
             try {
                 contact = new JSONObject();
-                contact.put(Constants.ID, "local_" + System.currentTimeMillis()
+                contact.put(Constants.VR_ID, "local_" + System.currentTimeMillis()
                         + Constants.EMPTY_STRING);
                 final JSONObject attributes = new JSONObject();
                 attributes.put(Constants.TYPE.toLowerCase(), VisitReportLoader.VISITREPORT_SOUP);
@@ -195,14 +206,23 @@ public class AddVisitActivity extends SalesforceActivity {
                 contact.put(SyncTarget.LOCALLY_DELETED, false);
                 //if (isCreate) {
                 smartStore.create(VisitReportLoader.VISITREPORT_SOUP, contact);
-                /*JSONObject jsonObject = new JSONObject();
+                JSONObject jsonObject = new JSONObject();
                 jsonObject.put(VisitReportObject.V_R_DESCRIPTION, description);
                 jsonObject.put(VisitReportObject.V_R_EXPENSES, expenses);
                 jsonObject.put(VisitReportObject.V_R_RELATED_PLAN, selectedPlan);
                 jsonObject.put(VisitReportObject.V_R_STATUS, selectedStatus);
                 jsonObject.put(VisitReportObject.V_R_SUBJECT, subject);
                 HashMap yourHashMap = new Gson().fromJson(jsonObject.toString(), HashMap.class);
-                updateServer(yourHashMap);*/
+                updateServer(yourHashMap);
+
+                ApiObjects apiObjects = new ApiObjects();
+                apiObjects.setFieldList(jsonObject.toString());
+                apiObjects.setObjectType("visit_report__c");
+
+                sampleDatabase.daoAccess().insertOnlySingleRecord(apiObjects);
+
+               /* VisitReportLoader visitReportLoader = new VisitReportLoader(AddVisitActivity.this,curAccount);
+                visitReportLoader.syncUp();*/
             /*} else {
                 smartStore.upsert(ContactListLoader.CONTACT_SOUP, contact);
             }*/
@@ -234,7 +254,9 @@ public class AddVisitActivity extends SalesforceActivity {
        restClient.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
            @Override
            public void onSuccess(RestRequest request, RestResponse result) {
-               System.out.println("result of upsertt is "+result);
+               //System.out.println("result of api number  is "+slNo);
+               System.out.println("result of request is"+request);
+               System.out.println("result of response is"+result);
            }
 
            @Override

@@ -2,14 +2,13 @@ package com.salesforce.samples.smartsyncexplorer;
 
 import android.accounts.Account;
 import android.app.LoaderManager;
-import android.app.ProgressDialog;
+import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -19,31 +18,22 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.SearchView;
-import android.widget.TextView;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
-import com.salesforce.androidsdk.smartsync.util.SyncOptions;
-import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
-import com.salesforce.samples.VisitReportLoader;
-import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
-import com.salesforce.samples.smartsyncexplorer.sync.ContactSyncAdapter;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -62,6 +52,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
     RecyclerView rvVisitReport;
     VisitReportAdapter mAdapter;
     private SearchView searchView;
+    boolean isLoadFinished = false;
     List<VisitReportObject> vrObjects = new ArrayList<>();
     public static final int MY_PERMISSIONS_REQUEST_WRITE_CALENDAR = 123;
 
@@ -77,6 +68,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
         isRegistered = new AtomicBoolean(false);
         sdkManager = SmartSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore(sdkManager.getUserAccountManager().getCurrentUser());
+        visitReportLoader = new VisitReportLoader(this, SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
     }
 
     @Override
@@ -94,7 +86,19 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
         // Sync now
         requestSync(true /* sync down only */);
 
-        //callVisitReportApi(client);
+        System.out.println("onresume client");
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                SampleDatabase  sampleDatabase = Room.databaseBuilder(getApplicationContext(),
+                        SampleDatabase.class, getString(R.string.db_name)).allowMainThreadQueries().build();
+
+                System.out.println("sample date bse saved records are "+sampleDatabase.daoAccess().fetchAllData().get(1).getSlNo());
+
+            }
+        });
+
 
         vrObjects = visitReportLoader.loadInBackground();
         mAdapter = new VisitReportAdapter(vrObjects);
@@ -120,6 +124,22 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
 
             }
         });
+
+        final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+
+        Account useraccount = SmartSyncSDKManager.getInstance().getUserAccountManager().buildAccount(sdkManager.getUserAccountManager().getCurrentUser());
+        final UserAccount user = sdkManager.getUserAccountManager().buildUserAccount(useraccount);
+
+        VisitReportLoader offlineOrderLoaders = new VisitReportLoader(VisitReportActivity.this, user);
+        offlineOrderLoaders.syncUp();
+
+        System.out.println("visit report loader is called ");
+
+        if (!isLoadFinished) {
+            callVisitReportApi(client);
+        }
+
+
     }
 
     private void callVisitReportApi(final RestClient client) {
@@ -292,12 +312,15 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
     @Override
     public void onLoadFinished(Loader<List<VisitReportObject>> loader, List<VisitReportObject> visitReportObjects) {
         refreshList(visitReportObjects);
-        System.out.println("load finished "+visitReportObjects);
+        if (visitReportObjects.size() != vrObjects.size()) {
+            isLoadFinished = true;
+        }
+        System.out.println("load finished " + visitReportObjects);
     }
 
     @Override
     public void onLoaderReset(Loader<List<VisitReportObject>> loader) {
-        System.out.println("load reset "+loader);
+        System.out.println("load reset " + loader);
         refreshList(null);
     }
 
@@ -329,6 +352,15 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
         getLoaderManager().getLoader(VISIT_LOADER_ID).forceLoad();
     }
 
+
+    @Override
+    public void onResume() {
+        super.onResume();
+       visitReportLoader.syncUp();
+        if (visitReportLoader!=null){
+            System.out.println("on resume "+visitReportLoader.loadInBackground());
+        }
+    }
 
     @Override
     public void onPause() {
@@ -370,7 +402,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
+        //noinspection SimplifiableIfStatementload finished
         if (id == R.id.action_search) {
             return true;
         } else if (id == R.id.action_add) {
@@ -410,7 +442,6 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
         });
         return true;
     }
-
 
 
 }

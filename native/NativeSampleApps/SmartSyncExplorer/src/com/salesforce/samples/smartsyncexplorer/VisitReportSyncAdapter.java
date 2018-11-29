@@ -10,7 +10,6 @@ import android.os.Bundle;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.samples.VisitReportLoader;
 
 public class VisitReportSyncAdapter extends AbstractThreadedSyncAdapter {
 
@@ -26,6 +25,7 @@ public class VisitReportSyncAdapter extends AbstractThreadedSyncAdapter {
     public VisitReportSyncAdapter(Context context, boolean autoInitialize,
                               boolean allowParallelSyncs) {
         super(context, autoInitialize, allowParallelSyncs);
+        System.out.println("VisitReportSyncAdapter is called ");
     }
 
     @Override

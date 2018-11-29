@@ -28,6 +28,7 @@ package com.salesforce.samples.smartsyncexplorer.ui;
 
 import android.accounts.Account;
 import android.app.LoaderManager;
+import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -36,6 +37,7 @@ import android.content.IntentFilter;
 import android.content.Loader;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -54,6 +56,7 @@ import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -63,8 +66,11 @@ import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.ui.SalesforceListActivity;
+import com.salesforce.samples.smartsyncexplorer.ApiObjects;
+import com.salesforce.samples.smartsyncexplorer.NetworkChangeReceiver;
 import com.salesforce.samples.smartsyncexplorer.ProductsActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
+import com.salesforce.samples.smartsyncexplorer.SampleDatabase;
 import com.salesforce.samples.smartsyncexplorer.VisitReportActivity;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
@@ -72,6 +78,7 @@ import com.salesforce.samples.smartsyncexplorer.sync.ContactSyncAdapter;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -81,7 +88,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author bhariharan
  */
 public class MainActivity extends SalesforceListActivity implements
-        OnQueryTextListener, OnCloseListener,
+        OnQueryTextListener, OnCloseListener, NetworkChangeReceiver.ConnectivityReceiverListener,
         LoaderManager.LoaderCallbacks<List<ContactObject>> {
 
     public static final String OBJECT_ID_KEY = "object_id";
@@ -121,6 +128,10 @@ public class MainActivity extends SalesforceListActivity implements
     private LoadCompleteReceiver loadCompleteReceiver;
     private AtomicBoolean isRegistered;
 
+    NetworkChangeReceiver connectionBroadcast;
+    RestClient restClient;
+    SampleDatabase sampleDatabase;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -129,6 +140,7 @@ public class MainActivity extends SalesforceListActivity implements
 //        contactLoader = new ContactListLoader(this, SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
 
         loadCompleteReceiver = new LoadCompleteReceiver();
+        connectionBroadcast = new NetworkChangeReceiver(this);
         isRegistered = new AtomicBoolean(false);
 
     }
@@ -145,6 +157,21 @@ public class MainActivity extends SalesforceListActivity implements
     @Override
     public void onResume() {
         super.onResume();
+        registerReceiver(connectionBroadcast,
+                new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+
+       /* connectivityReceiverListener = new NetworkChangeReceiver.ConnectivityReceiverListener() {
+            @Override
+            public void onNetworkConnectionChanged(boolean isConnected) {
+                if (isConnected) {
+                    Toast.makeText(MainActivity.this, "connected to internet", Toast.LENGTH_SHORT).show();
+                }else {
+                    Toast.makeText(MainActivity.this, "connected to internet lost", Toast.LENGTH_SHORT).show();
+                }
+            }
+        };*/
+
+
         listAdapter = new ContactListAdapter(this, R.layout.list_item);
         System.out.println("current user resume is " + SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
         //contactLoader = new ContactListLoader(this, SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
@@ -158,6 +185,7 @@ public class MainActivity extends SalesforceListActivity implements
 
     @Override
     public void onResume(RestClient client) {
+        restClient = client;
         // Loader initialization and receiver registration
         getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
         if (!isRegistered.get()) {
@@ -165,6 +193,19 @@ public class MainActivity extends SalesforceListActivity implements
                     new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
         }
         isRegistered.set(true);
+
+        if (connectionBroadcast.isOnline(this)) {
+            sampleDatabase = Room.databaseBuilder(getApplicationContext(),
+                    SampleDatabase.class, getString(R.string.db_name)).allowMainThreadQueries().build();
+            List<ApiObjects> apiObjects = sampleDatabase.daoAccess().fetchAllData();
+            for (int i = 0; i < apiObjects.size(); i++) {
+                System.out.println("api objects are " + apiObjects.get(i).getFieldList());
+                HashMap yourHashMap = new Gson().fromJson(apiObjects.get(i).getFieldList(), HashMap.class);
+                updateServer(yourHashMap, apiObjects.get(i).getObjectType(), apiObjects.get(i).getSlNo(),client);
+            }
+
+        }
+
 
         // Setup periodic sync
         setupPeriodicSync();
@@ -236,6 +277,9 @@ public class MainActivity extends SalesforceListActivity implements
             unregisterReceiver(loadCompleteReceiver);
         }
         isRegistered.set(false);
+        if (connectionBroadcast != null) {
+            unregisterReceiver(connectionBroadcast);
+        }
     	/*getLoaderManager().destroyLoader(CONTACT_LOADER_ID);
 		contactLoader = null;*/
         super.onPause();
@@ -244,6 +288,7 @@ public class MainActivity extends SalesforceListActivity implements
     @Override
     public void onDestroy() {
         loadCompleteReceiver = null;
+        connectionBroadcast = null;
         super.onDestroy();
     }
 
@@ -371,6 +416,56 @@ public class MainActivity extends SalesforceListActivity implements
         nameFilter.filter(filterTerm);
     }
 
+    @Override
+    public void onNetworkConnectionChanged(boolean isConnected) {
+        System.out.println("isComnnecteed is " + isConnected);
+        if (isConnected) {
+            Toast.makeText(MainActivity.this, "connected to internet", Toast.LENGTH_SHORT).show();
+           /* SampleDatabase sampleDatabase = Room.databaseBuilder(getApplicationContext(),
+                    SampleDatabase.class, getString(R.string.db_name)).allowMainThreadQueries().build();
+            List<ApiObjects> apiObjects = sampleDatabase.daoAccess().fetchAllData();
+            for (int i = 0; i < apiObjects.size(); i++) {
+                System.out.println("api objects are " + apiObjects.get(i).getFieldList());
+                HashMap yourHashMap = new Gson().fromJson(apiObjects.get(i).getFieldList(), HashMap.class);
+                updateServer(yourHashMap, apiObjects.get(i).getObjectType(), apiObjects.get(i).getSlNo());
+            }
+*/
+        } else {
+            Toast.makeText(MainActivity.this, "connection to internet lost", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void updateServer(HashMap<String, Object> fields, String objectType, final int slNo, RestClient client) {
+
+        final RestRequest restRequest;
+        try {
+            restRequest = RestRequest.getRequestForCreate(getString(R.string.api_version), objectType, fields);
+        } catch (Exception e) {
+            //MainActivity.showError(this, e);
+            e.printStackTrace();
+            return;
+        }
+        //RestClient restClient = new RestClient();
+
+        client.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
+            @Override
+            public void onSuccess(RestRequest request, RestResponse result) {
+                System.out.println("result of api number  is " + slNo);
+                System.out.println("result of request is" + request);
+                System.out.println("result of response is" + result+">>> "+slNo);
+                if (result.isSuccess()){
+                    //sampleDatabase.daoAccess().deleteRecord();
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+                //MainActivity.showError(DetailActivity.this, e);
+                e.printStackTrace();
+            }
+        });
+    }
+
     /**
      * Custom array adapter to supply data to the list view.
      *
@@ -420,8 +515,8 @@ public class MainActivity extends SalesforceListActivity implements
                     final TextView objImage = (TextView) convertView.findViewById(R.id.obj_image);
                     if (objName != null) {
                         if (sObject.getName().contains("null")) {
-                            objName.setText(sObject.getName().replace("null",""));
-                        }else {
+                            objName.setText(sObject.getName().replace("null", ""));
+                        } else {
                             objName.setText(sObject.getName());
                         }
                     }

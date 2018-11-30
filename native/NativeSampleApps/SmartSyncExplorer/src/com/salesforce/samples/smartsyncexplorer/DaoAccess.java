@@ -21,4 +21,7 @@ public interface DaoAccess {
 
     @Delete
     void deleteRecord(ApiObjects university);
+
+    @Query("DELETE FROM ApiObjects")
+    void deleteAllRecords();
 }

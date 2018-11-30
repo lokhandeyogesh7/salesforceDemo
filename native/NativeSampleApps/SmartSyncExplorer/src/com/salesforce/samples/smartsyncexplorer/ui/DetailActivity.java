@@ -76,13 +76,17 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.detail);
 		getActionBar().setHomeButtonEnabled(true);
-		getActionBar().setIcon(R.drawable.ic_action_back);
+		getActionBar().setIcon(R.drawable.sf__action_back);
 		final Intent launchIntent = getIntent();
 		if (launchIntent != null) {
 			objectId = launchIntent.getStringExtra(MainActivity.OBJECT_ID_KEY);
 			objectTitle = launchIntent.getStringExtra(MainActivity.OBJECT_TITLE_KEY);
-			getActionBar().setTitle(launchIntent.getStringExtra(MainActivity.OBJECT_NAME_KEY));
-			getActionBar().setSubtitle(objectTitle);
+			String sTitle = launchIntent.getStringExtra(MainActivity.OBJECT_NAME_KEY);
+			if (sTitle.contains("null")){
+				sTitle = sTitle.replace("null","");
+			}
+			getActionBar().setTitle(sTitle);
+			//getActionBar().setitle(objectTitle);
 		}
 		deleteConfirmationDialog = new DeleteDialogFragment();
 	}
@@ -110,8 +114,12 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	    logoutItem.setVisible(false);
 	    final MenuItem addItem = menu.findItem(R.id.action_add);
 	    addItem.setVisible(false);
-	    //final MenuItem refreshItem = menu.findItem(R.id.action_refresh);
-	    //refreshItem.setIcon(R.drawable.ic_action_save);
+	    final MenuItem addItem1 = menu.findItem(R.id.action_visit_report);
+	    addItem1.setVisible(false);
+	    final MenuItem addItem2 = menu.findItem(R.id.action_products);
+	    addItem2.setVisible(false);
+	    final MenuItem refreshItem = menu.findItem(R.id.action_refresh);
+	    refreshItem.setIcon(R.drawable.ic_save);
 	    return super.onCreateOptionsMenu(menu);
 	}
 

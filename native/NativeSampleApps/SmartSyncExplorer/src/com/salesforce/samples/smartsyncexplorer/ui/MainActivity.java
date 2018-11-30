@@ -27,6 +27,7 @@
 package com.salesforce.samples.smartsyncexplorer.ui;
 
 import android.accounts.Account;
+import android.annotation.SuppressLint;
 import android.app.LoaderManager;
 import android.arch.persistence.room.Room;
 import android.content.BroadcastReceiver;
@@ -47,6 +48,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.Filter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -159,6 +161,8 @@ public class MainActivity extends SalesforceListActivity implements
         super.onResume();
         registerReceiver(connectionBroadcast,
                 new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+        sampleDatabase = Room.databaseBuilder(getApplicationContext(),
+                SampleDatabase.class, getString(R.string.db_name)).allowMainThreadQueries().build();
 
        /* connectivityReceiverListener = new NetworkChangeReceiver.ConnectivityReceiverListener() {
             @Override
@@ -179,7 +183,7 @@ public class MainActivity extends SalesforceListActivity implements
             listAdapter.setData(contactLoader.loadInBackground());
             getListView().setAdapter(listAdapter);
             nameFilter = new NameFieldFilter(listAdapter, contactLoader.loadInBackground());
-            logoutConfirmationDialog = new LogoutDialogFragment();
+            logoutConfirmationDialog = new LogoutDialogFragment(MainActivity.this);
         }
     }
 
@@ -194,7 +198,7 @@ public class MainActivity extends SalesforceListActivity implements
         }
         isRegistered.set(true);
 
-        if (connectionBroadcast.isOnline(this)) {
+        /*if (connectionBroadcast.isOnline(this)) {
             sampleDatabase = Room.databaseBuilder(getApplicationContext(),
                     SampleDatabase.class, getString(R.string.db_name)).allowMainThreadQueries().build();
             List<ApiObjects> apiObjects = sampleDatabase.daoAccess().fetchAllData();
@@ -204,7 +208,7 @@ public class MainActivity extends SalesforceListActivity implements
                 updateServer(yourHashMap, apiObjects.get(i).getObjectType(), apiObjects.get(i).getSlNo(),client);
             }
 
-        }
+        }*/
 
 
         // Setup periodic sync
@@ -292,6 +296,7 @@ public class MainActivity extends SalesforceListActivity implements
         super.onDestroy();
     }
 
+    @SuppressLint("ResourceType")
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         final MenuInflater inflater = getMenuInflater();
@@ -301,6 +306,9 @@ public class MainActivity extends SalesforceListActivity implements
         searchView.setOnQueryTextListener(this);
         searchView.setOnCloseListener(this);
         searchItem.setActionView(searchView);
+        int id = searchView.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
+        TextView textView = (TextView) searchView.findViewById(id);
+        textView.setTextColor(Color.WHITE);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -421,25 +429,25 @@ public class MainActivity extends SalesforceListActivity implements
         System.out.println("isComnnecteed is " + isConnected);
         if (isConnected) {
             Toast.makeText(MainActivity.this, "connected to internet", Toast.LENGTH_SHORT).show();
-           /* SampleDatabase sampleDatabase = Room.databaseBuilder(getApplicationContext(),
+            SampleDatabase sampleDatabase = Room.databaseBuilder(getApplicationContext(),
                     SampleDatabase.class, getString(R.string.db_name)).allowMainThreadQueries().build();
             List<ApiObjects> apiObjects = sampleDatabase.daoAccess().fetchAllData();
             for (int i = 0; i < apiObjects.size(); i++) {
                 System.out.println("api objects are " + apiObjects.get(i).getFieldList());
                 HashMap yourHashMap = new Gson().fromJson(apiObjects.get(i).getFieldList(), HashMap.class);
-                updateServer(yourHashMap, apiObjects.get(i).getObjectType(), apiObjects.get(i).getSlNo());
+                updateServer(yourHashMap, apiObjects.get(i));
             }
-*/
         } else {
             Toast.makeText(MainActivity.this, "connection to internet lost", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void updateServer(HashMap<String, Object> fields, String objectType, final int slNo, RestClient client) {
+
+    private void updateServer(HashMap<String, Object> fields, final ApiObjects apiObjects) {
 
         final RestRequest restRequest;
         try {
-            restRequest = RestRequest.getRequestForCreate(getString(R.string.api_version), objectType, fields);
+            restRequest = RestRequest.getRequestForCreate(getString(R.string.api_version), apiObjects.getObjectType(), fields);
         } catch (Exception e) {
             //MainActivity.showError(this, e);
             e.printStackTrace();
@@ -447,14 +455,14 @@ public class MainActivity extends SalesforceListActivity implements
         }
         //RestClient restClient = new RestClient();
 
-        client.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
+        restClient.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
             @Override
             public void onSuccess(RestRequest request, RestResponse result) {
-                System.out.println("result of api number  is " + slNo);
+                System.out.println("result of api number  is " + apiObjects.getSlNo());
                 System.out.println("result of request is" + request);
-                System.out.println("result of response is" + result+">>> "+slNo);
+                System.out.println("result of response is" + result+">>> "+apiObjects.getSlNo());
                 if (result.isSuccess()){
-                    //sampleDatabase.daoAccess().deleteRecord();
+                    sampleDatabase.daoAccess().deleteRecord(apiObjects);
                 }
             }
 

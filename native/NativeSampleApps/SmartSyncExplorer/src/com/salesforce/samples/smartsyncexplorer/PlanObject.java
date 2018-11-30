@@ -12,7 +12,7 @@ public class PlanObject extends SalesforceObject {
 
     public static final String PLAN_NAME = "Name";
 
-    public  String getPlanName() {
+    public  String toString() {
         return sanitizeText(rawData.optString(PLAN_NAME));
     }
 

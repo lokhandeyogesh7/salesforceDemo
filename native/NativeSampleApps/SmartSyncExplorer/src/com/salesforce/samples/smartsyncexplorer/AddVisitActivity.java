@@ -57,6 +57,7 @@ public class AddVisitActivity extends SalesforceActivity {
     private long accountSyncId = -1;
     RestClient restClient;
     SampleDatabase sampleDatabase;
+    NetworkChangeReceiver iNetworkChangeReceiver;
 
 
     @Override
@@ -69,8 +70,12 @@ public class AddVisitActivity extends SalesforceActivity {
         etDescription = findViewById(R.id.etDescription);
         spStatus = findViewById(R.id.spStatus);
 
+        getActionBar().setTitle("Add Visit Report");
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+
         sampleDatabase = Room.databaseBuilder(getApplicationContext(),
                 SampleDatabase.class, getString(R.string.db_name)).allowMainThreadQueries().build();
+        iNetworkChangeReceiver = new NetworkChangeReceiver();
 
         SmartSyncSDKManager sdkManager = SmartSyncSDKManager.getInstance();
         smartStore = sdkManager.getSmartStore(sdkManager.getUserAccountManager().getCurrentUser());
@@ -95,8 +100,8 @@ public class AddVisitActivity extends SalesforceActivity {
 
         System.out.println("plans Are " + plans);
 
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_spinner_dropdown_item, arrPlans);
+        final ArrayAdapter<PlanObject> adapter =
+                new ArrayAdapter<PlanObject>(getApplicationContext(), android.R.layout.simple_spinner_dropdown_item, plans);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         etPlan.setAdapter(adapter);
         etPlan.setTitle("Select Plan");
@@ -108,7 +113,7 @@ public class AddVisitActivity extends SalesforceActivity {
         arrStatus.add("Approved");
         arrStatus.add("Rejected");
 
-        ArrayAdapter<String> adapter1 =
+        final ArrayAdapter<String> adapter1 =
                 new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_spinner_dropdown_item, arrStatus);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spStatus.setAdapter(adapter1);
@@ -116,8 +121,9 @@ public class AddVisitActivity extends SalesforceActivity {
         etPlan.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                System.out.println("hsdjgd " + adapterView.getItemAtPosition(i));
-                selectedPlan = String.valueOf(adapterView.getItemAtPosition(i));
+                PlanObject planObject =adapter.getItem(i);
+                selectedPlan = planObject.getPlanId();
+                System.out.println("hsdjgd " + selectedPlan);
             }
 
             @Override
@@ -213,13 +219,15 @@ public class AddVisitActivity extends SalesforceActivity {
                 jsonObject.put(VisitReportObject.V_R_STATUS, selectedStatus);
                 jsonObject.put(VisitReportObject.V_R_SUBJECT, subject);
                 HashMap yourHashMap = new Gson().fromJson(jsonObject.toString(), HashMap.class);
-                updateServer(yourHashMap);
 
-                ApiObjects apiObjects = new ApiObjects();
-                apiObjects.setFieldList(jsonObject.toString());
-                apiObjects.setObjectType("visit_report__c");
-
-                sampleDatabase.daoAccess().insertOnlySingleRecord(apiObjects);
+                if (iNetworkChangeReceiver.isOnline(this)) {
+                    updateServer(yourHashMap);
+                } else {
+                    ApiObjects apiObjects = new ApiObjects();
+                    apiObjects.setFieldList(jsonObject.toString());
+                    apiObjects.setObjectType("visit_report__c");
+                    sampleDatabase.daoAccess().insertOnlySingleRecord(apiObjects);
+                }
 
                /* VisitReportLoader visitReportLoader = new VisitReportLoader(AddVisitActivity.this,curAccount);
                 visitReportLoader.syncUp();*/
@@ -235,45 +243,32 @@ public class AddVisitActivity extends SalesforceActivity {
     }
 
 
+    private void updateServer(HashMap<String, Object> fields) {
 
+        final RestRequest restRequest;
+        try {
+            restRequest = RestRequest.getRequestForCreate(getString(R.string.api_version), "visit_report__c", fields);
+        } catch (Exception e) {
+            //MainActivity.showError(this, e);
+            e.printStackTrace();
+            return;
+        }
 
+        restClient.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
+            @Override
+            public void onSuccess(RestRequest request, RestResponse result) {
+                //System.out.println("result of api number  is "+slNo);
+                System.out.println("result of request is" + request);
+                System.out.println("result of response is" + result);
+            }
 
-
-
-   private void updateServer(HashMap<String, Object> fields){
-
-       final RestRequest restRequest;
-       try {
-           restRequest = RestRequest.getRequestForCreate(getString(R.string.api_version), "visit_report__c", fields);
-       } catch (Exception e) {
-           //MainActivity.showError(this, e);
-           e.printStackTrace();
-           return;
-       }
-
-       restClient.sendAsync(restRequest, new RestClient.AsyncRequestCallback() {
-           @Override
-           public void onSuccess(RestRequest request, RestResponse result) {
-               //System.out.println("result of api number  is "+slNo);
-               System.out.println("result of request is"+request);
-               System.out.println("result of response is"+result);
-           }
-
-           @Override
-           public void onError(Exception e) {
-               //MainActivity.showError(DetailActivity.this, e);
-               e.printStackTrace();
-           }
-       });
-   }
-
-
-
-
-
-
-
-
+            @Override
+            public void onError(Exception e) {
+                //MainActivity.showError(DetailActivity.this, e);
+                e.printStackTrace();
+            }
+        });
+    }
 
 
     /**
@@ -349,20 +344,20 @@ public class AddVisitActivity extends SalesforceActivity {
 
                 final String soqlQuery = SOQLBuilder.getInstanceWithFields(VisitReportObject.V_R_DESCRIPTION, VisitReportObject.V_R_EXPENSES, VisitReportObject.V_R_NAME, VisitReportObject.V_R_RELATED_PLAN, VisitReportObject.V_R_STATUS, VisitReportObject.V_R_SUBJECT).from("visit_report__c").limit(100000).build();
 
-                System.out.println("soQl Query "+soqlQuery);
+                System.out.println("soQl Query " + soqlQuery);
 
                 final SyncDownTarget target = new SoqlSyncDownTarget(soqlQuery);
                 final SyncState sync = syncMgr.syncDown(target, options, "visitreport", callback);
-                System.out.println("sync is "+sync.asJSON());
+                System.out.println("sync is " + sync.asJSON());
                 accountSyncId = sync.getId();
             } else {
                 syncMgr.reSync(accountSyncId, callback);
             }
         } catch (JSONException e) {
             //DebugLog.e("JSONException occurred while parsing"+e);
-            System.out.println("JSONException occurred while parsing"+e);
+            System.out.println("JSONException occurred while parsing" + e);
         } catch (SyncManager.SmartSyncException e) {
-            System.out.println("SmartSyncException occurred while attempting to sync down"+e);
+            System.out.println("SmartSyncException occurred while attempting to sync down" + e);
         }
     }
 

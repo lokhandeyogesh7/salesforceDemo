@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<resources xmlns:android="http://schemas.android.com/apk/res/android">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:android="http://schemas.android.com/apk/res/android">
 
     <style name="SalesforceSDK">
     </style>
@@ -13,7 +13,9 @@
     <style name="SalesforceSDKActionBar"
         parent="@android:style/Widget.Holo.Light.ActionBar.Solid.Inverse">
       <!--  <item name="android:background">@drawable/sf__header_bg</item>-->
-        <item name="android:background">@android:color/holo_purple</item>
+        <item name="android:background">#322E61</item>
+        <item name="android:iconTint" tools:targetApi="o">#FFFFFF</item>
+        <item name="android:textColor">#FFFFFF</item>
     </style>
 
     <style name="SalesforceSDK.ServerPicker">

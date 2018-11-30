@@ -20,4 +20,5 @@
         android:textStyle="bold"
         android:gravity="center"
         android:textSize="18sp" />
-</LinearLayout> 
+
+</LinearLayout>

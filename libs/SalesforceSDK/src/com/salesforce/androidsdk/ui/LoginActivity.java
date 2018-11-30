@@ -296,7 +296,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.sf__login, menu);
+        //getMenuInflater().inflate(R.menu.sf__login, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -327,7 +327,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
 	public void loadingLoginPage(String loginUrl) {
 		final ActionBar ab = getActionBar();
 		if (ab != null) {
-			ab.setTitle(loginUrl);
+			//ab.setTitle(loginUrl);
+			ab.setTitle("Login");
 		}
 	}
 

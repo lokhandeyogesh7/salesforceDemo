@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -18,6 +19,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.SearchView;
+import android.widget.TextView;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -94,7 +96,7 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
                 SampleDatabase  sampleDatabase = Room.databaseBuilder(getApplicationContext(),
                         SampleDatabase.class, getString(R.string.db_name)).allowMainThreadQueries().build();
 
-                System.out.println("sample date bse saved records are "+sampleDatabase.daoAccess().fetchAllData().get(1).getSlNo());
+//                System.out.println("sample date bse saved records are "+sampleDatabase.daoAccess().fetchAllData().get(1).getSlNo());
 
             }
         });
@@ -423,6 +425,9 @@ public class VisitReportActivity extends SalesforceActivity implements LoaderMan
         searchView = new SearchView(this);
        /* searchView.setOnQueryTextListener(this);
         searchView.setOnCloseListener(this);*/
+        int id = searchView.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
+        TextView textView = (TextView) searchView.findViewById(id);
+        textView.setTextColor(Color.WHITE);
         searchItem.setActionView(searchView);
         // listening to search query text change
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {

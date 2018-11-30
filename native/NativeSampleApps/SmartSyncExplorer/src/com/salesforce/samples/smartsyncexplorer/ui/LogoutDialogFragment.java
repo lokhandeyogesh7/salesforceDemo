@@ -26,9 +26,12 @@
  */
 package com.salesforce.samples.smartsyncexplorer.ui;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.arch.persistence.room.Room;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
@@ -36,26 +39,32 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.samples.smartsyncexplorer.R;
+import com.salesforce.samples.smartsyncexplorer.SampleDatabase;
 
 import java.util.List;
 
 /**
  * A simple dialog fragment to provide options at logout.
  */
+@SuppressLint("ValidFragment")
 public class LogoutDialogFragment extends DialogFragment {
 
     private AlertDialog logoutConfirmationDialog;
+    Context context;
 
     /**
      * Default constructor.
+     * @param context
      */
-    public LogoutDialogFragment() {
+    public LogoutDialogFragment(Context context) {
+        this.context = context;
     }
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         logoutConfirmationDialog = new AlertDialog.Builder(getActivity())
                 .setTitle(R.string.logout_title)
+                .setMessage("This will also delete all your unsaved data do you wish to continue?")
                 .setPositiveButton(R.string.yes,
                         new DialogInterface.OnClickListener() {
 
@@ -69,6 +78,9 @@ public class LogoutDialogFragment extends DialogFragment {
                                 *//*for (int i = 0; i < soupNames.size(); i++) {
                                     smartStore.dropAllSoups();
                                 }*/
+                                SampleDatabase sampleDatabase = Room.databaseBuilder(context,
+                                        SampleDatabase.class, getString(R.string.db_name)).allowMainThreadQueries().build();
+                                sampleDatabase.daoAccess().deleteAllRecords();
                                 SalesforceSDKManager.getInstance().logout(getActivity());
                             }
                         })

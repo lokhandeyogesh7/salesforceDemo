@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,6 +32,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SearchView;
+import android.widget.TextView;
 
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -274,10 +276,10 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                                     btnDownloadAttachments.setEnabled(true);
                                     final JSONArray jsonArray = response.asJSONObject().getJSONArray("records");
                                     inserAttachments(jsonArray);
-                                    System.out.println("is last "+isLast);
+                                    System.out.println("is last " + isLast);
                                     downloadAttchmets(client);
                                     if (isLast) {
-                                        System.out.println("is last inside loop "+isLast);
+                                        System.out.println("is last inside loop " + isLast);
                                     }
                                    /* btnDownloadAttachments.setOnClickListener(new View.OnClickListener() {
                                         @Override
@@ -339,7 +341,7 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                 Toast.makeText(ProductsActivity.this,"Please Click on Get Details",Toast.LENGTH_LONG).show();
             }*/
 
-            System.out.println("attachmentObjects.size() "+attachmentObjects.size()+">>> "+productObjects.get(i).getProductName());
+            System.out.println("attachmentObjects.size() " + attachmentObjects.size() + ">>> " + productObjects.get(i).getProductName());
 
             for (int j = 0; j < attachmentObjects.size(); j++) {
                 String cdID = attachmentObjects.get(j).getContentDocumentId();
@@ -380,8 +382,16 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
                     public void run() {
                        /* progressDialog.setMessage("download in progress...");
                         progressDialog.show();*/
-                        LongOperation longOperation = new LongOperation(client, finalVersionData, fileType, contentDocumentId);
-                        longOperation.execute();
+                        String path = Environment.getExternalStorageDirectory() + "/" + "SalesForce/";
+                        File dir = new File(path);
+                        if (!dir.exists()) {
+                            dir.mkdirs();
+                        }
+                        File fos = new File(path + contentDocumentId + "." + fileType.toLowerCase().trim());
+                        if (!fos.exists()) {
+                            LongOperation longOperation = new LongOperation(client, finalVersionData, fileType, contentDocumentId);
+                            longOperation.execute();
+                        }
                     }
                 });
             }
@@ -558,6 +568,10 @@ public class ProductsActivity extends SalesforceActivity implements LoaderManage
         searchView = new SearchView(this);
        /* searchView.setOnQueryTextListener(this);
         searchView.setOnCloseListener(this);*/
+        int id = searchView.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
+        TextView textView = (TextView) searchView.findViewById(id);
+        textView.setTextColor(Color.WHITE);
+
         searchItem.setActionView(searchView);
         // listening to search query text change
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
